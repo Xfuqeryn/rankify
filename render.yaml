@@ -3,7 +3,7 @@ services:
     name: rankify
     env: node
     region: oregon
-    plan: starter
+    plan: free
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /health
@@ -28,4 +28,4 @@ databases:
     databaseName: rankify
     user: rankify
     region: oregon
-    plan: starter
+    plan: free
