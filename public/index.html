@@ -1094,6 +1094,92 @@
     .action-btn.copy  { background: var(--surface3); color: var(--ink2); }
     .action-btns { display: flex; flex-wrap: wrap; gap: 4px; }
 
+    /* ── Tier badges ──────────────────────────────────────────── */
+    .tier-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 800; letter-spacing: 0.05em;
+      width: 20px; height: 20px; border-radius: 4px;
+    }
+    .tier-badge.t1 { background: var(--green-bg);  color: var(--green); }
+    .tier-badge.t2 { background: var(--amber-bg);  color: var(--amber); }
+    .tier-badge.t3 { background: var(--blue-bg);   color: var(--blue); }
+
+    /* ── CRM status pill ──────────────────────────────────────── */
+    .crm-select {
+      appearance: none;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--rpill);
+      padding: 3px 10px;
+      font-family: var(--ff-ui);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+      transition: background 0.15s;
+      background-repeat: no-repeat;
+      background-position: right 6px center;
+    }
+    .crm-select.New         { background-color: var(--surface3);  color: var(--ink2); }
+    .crm-select.Contacted   { background-color: var(--blue-bg);   color: var(--blue); }
+    .crm-select.Negotiating { background-color: var(--amber-bg);  color: var(--amber); }
+    .crm-select.Acquired    { background-color: var(--green-bg);  color: var(--green); }
+
+    /* ── Dormant chip ─────────────────────────────────────────── */
+    .dormant-chip {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 10px; font-weight: 600; letter-spacing: 0.03em;
+      background: var(--surface3); color: var(--ink3);
+      padding: 1px 6px; border-radius: 4px;
+    }
+
+    /* ── Yield score bar ──────────────────────────────────────── */
+    .yield-bar {
+      display: flex; align-items: center; gap: 5px;
+    }
+    .yield-num {
+      font-size: 12px; font-weight: 600; color: var(--ink); min-width: 24px;
+    }
+    .yield-track {
+      flex: 1; height: 3px; background: var(--surface3); border-radius: 2px;
+      overflow: hidden; min-width: 32px;
+    }
+    .yield-fill { height: 100%; background: var(--blue); border-radius: 2px; }
+
+    /* ── Scout alert card ─────────────────────────────────────── */
+    .scout-card {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 18px; border-bottom: 0.5px solid var(--border);
+      transition: background 0.1s;
+    }
+    .scout-card:last-child { border-bottom: none; }
+    .scout-card:hover { background: var(--surface2); }
+    .scout-icon {
+      width: 34px; height: 34px; border-radius: var(--r);
+      background: var(--amber-bg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+    .scout-info { flex: 1; min-width: 0; }
+    .scout-title { font-size: 13.5px; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+    .scout-meta  { font-size: 12px; color: var(--ink3); }
+
+    /* ── Genre tag (Manage Genres view) ──────────────────────── */
+    .genre-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--surface); border: 0.5px solid var(--border2);
+      border-radius: var(--rpill); padding: 5px 10px 5px 13px;
+      font-size: 13px; font-weight: 500; color: var(--ink);
+      transition: border-color 0.12s;
+    }
+    .genre-tag:hover { border-color: var(--ink3); }
+    .genre-remove {
+      width: 16px; height: 16px; border-radius: 50%; border: none;
+      background: var(--surface3); color: var(--ink3); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; transition: background 0.12s, color 0.12s;
+    }
+    .genre-remove:hover { background: var(--red-bg); color: var(--red); }
+
     /* ── Opportunity score bar ────────────────────────────────── */
     .opp-score-bar {
       display: flex;
@@ -1177,6 +1263,14 @@
     <div class="nav-item" data-view="settings" onclick="navigate('settings')">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 1.5v1M7.5 12.5v1M1.5 7.5h1M12.5 7.5h1M3.3 3.3l.7.7M11 11l.7.7M11 3.3l-.7.7M3.3 11l.7-.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       Settings
+    </div>
+  </div>
+
+  <div class="nav-section" style="margin-top:8px">
+    <div class="nav-section-label">Manage</div>
+    <div class="nav-item" data-view="genres" onclick="navigate('genres')">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 4v3.5l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Target Genres
     </div>
   </div>
 
@@ -1274,6 +1368,15 @@
           </div>
           <div class="panel-body" id="dash-alerts"></div>
         </div>
+      </div>
+
+      <!-- Priority Scout Alerts -->
+      <div class="panel section-gap" id="dash-scout-panel" style="display:none">
+        <div class="panel-header">
+          <span class="panel-title">🎯 Priority Scout — Acquisition Alerts</span>
+          <span class="panel-meta">Core-genre playlists ranking top-10 with &lt;5k followers + contact info</span>
+        </div>
+        <div class="panel-body" id="dash-scout-list"></div>
       </div>
 
       <!-- Bottom row: follower growth + market share -->
@@ -1613,6 +1716,7 @@
                 </th>
                 <th>Market</th>
                 <th>Genre</th>
+                <th>Status</th>
                 <th>Direct Actions</th>
               </tr>
             </thead>
@@ -1633,12 +1737,26 @@
       <div class="panel">
         <!-- Filter bar -->
         <div class="filter-bar">
-          <input class="input" id="acq-search" placeholder="Search playlist or owner…" style="width:200px" oninput="renderAcquisition()" />
-          <select class="select" id="acq-genre-filter" style="width:140px" onchange="renderAcquisition()">
+          <input class="input" id="acq-search" placeholder="Search playlist or owner…" style="width:180px" oninput="renderAcquisition()" />
+          <select class="select" id="acq-genre-filter" style="width:130px" onchange="renderAcquisition()">
             <option value="">All Genres</option>
           </select>
-          <select class="select" id="acq-market-filter" style="width:100px" onchange="renderAcquisition()">
+          <select class="select" id="acq-market-filter" style="width:90px" onchange="renderAcquisition()">
             <option value="">All Markets</option>
+          </select>
+          <select class="select" id="acq-followers-filter" style="width:120px" onchange="renderAcquisition()">
+            <option value="">All Followers</option>
+            <option value="0-500">&lt; 500</option>
+            <option value="500-1000">500–1k</option>
+            <option value="1000-2500">1k–2.5k</option>
+            <option value="2500-5000">2.5k–5k</option>
+          </select>
+          <select class="select" id="acq-status-filter" style="width:120px" onchange="renderAcquisition()">
+            <option value="">All Statuses</option>
+            <option value="New">New</option>
+            <option value="Contacted">Contacted</option>
+            <option value="Negotiating">Negotiating</option>
+            <option value="Acquired">Acquired</option>
           </select>
           <span class="filter-count" id="acq-count"></span>
         </div>
@@ -1647,19 +1765,54 @@
             <thead>
               <tr>
                 <th>Playlist</th>
-                <th>Owner</th>
-                <th class="sortable" onclick="sortAcquisition('position')" title="Current search rank">Rank</th>
-                <th class="sortable" onclick="sortAcquisition('followers')" title="Follower count">Followers</th>
+                <th>Owner / Tier</th>
+                <th class="sortable" onclick="sortAcquisition('position')">Rank</th>
+                <th class="sortable" onclick="sortAcquisition('followers')">Followers</th>
+                <th class="sortable" onclick="sortAcquisition('yield_score')">Yield</th>
                 <th>Genre</th>
-                <th>Market</th>
-                <th class="sortable" onclick="sortAcquisition('opportunity_score')" title="(6−rank)×15 + (5000−followers)/100">
-                  Opp. Score <span class="sort-icon active" id="acq-sort-icon">↓</span>
+                <th class="sortable" onclick="sortAcquisition('opportunity_score')">
+                  Score <span class="sort-icon active" id="acq-sort-icon">↓</span>
                 </th>
-                <th>Actions</th>
+                <th>Status / Actions</th>
               </tr>
             </thead>
             <tbody id="acq-tbody"></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TARGET GENRES ────────────────────────────────────────── -->
+    <div class="view" data-view="genres" id="view-genres">
+      <div class="flex-between section-gap">
+        <div>
+          <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Target Genres</div>
+          <div class="text-muted" style="margin-top:3px">The Master Sync crawls all markets for every genre listed here</div>
+        </div>
+      </div>
+
+      <div class="panel section-gap">
+        <div class="panel-header">
+          <span class="panel-title">Add Genre</span>
+        </div>
+        <div class="panel-body" style="padding:14px 16px">
+          <div style="display:flex;gap:8px">
+            <input class="input" id="genre-input" placeholder="e.g. afro house" style="flex:1" onkeydown="if(event.key==='Enter')addGenre()" />
+            <button class="btn primary" onclick="addGenre()">Add</button>
+          </div>
+          <div style="font-size:12px;color:var(--ink3);margin-top:8px">
+            Seeds <strong>10 markets × 20 localized terms</strong> for this genre on the next Master Sync.
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Active Genres</span>
+          <span class="panel-meta" id="genres-count"></span>
+        </div>
+        <div class="panel-body" style="padding:16px 18px">
+          <div style="display:flex;flex-wrap:wrap;gap:8px" id="genres-list"></div>
         </div>
       </div>
     </div>
@@ -1748,12 +1901,41 @@ const S = {
   marketShareChart: null,
   leads: [],
   acquisition: [],
+  genres: [],
+  scoutAlerts: [],
   leadsSort: { key: 'influence_count', dir: -1 },
   acqSort:   { key: 'opportunity_score', dir: -1 },
   syncPollTimer: null,
   notionConnected: localStorage.getItem('notion_connected') === 'true',
   dashAlerts: [],
 };
+
+// ── Tier helper ──────────────────────────────────────────────────
+const TIER1_MKTS = new Set(['US','GB','DE']);
+const TIER2_MKTS = new Set(['FR','NL','BR']);
+const TIER3_MKTS = new Set(['TR','ID','PH','VN']);
+function tierBadge(market) {
+  if (TIER1_MKTS.has(market)) return `<span class="tier-badge t1">T1</span>`;
+  if (TIER2_MKTS.has(market)) return `<span class="tier-badge t2">T2</span>`;
+  if (TIER3_MKTS.has(market)) return `<span class="tier-badge t3">T3</span>`;
+  return `<span class="tier-badge" style="background:var(--surface3);color:var(--ink3)">—</span>`;
+}
+
+// ── CRM status select helper ─────────────────────────────────────
+const CRM_STATUSES = ['New','Contacted','Negotiating','Acquired'];
+function crmSelect(spotifyId, current, onchangeFn) {
+  const opts = CRM_STATUSES.map(s =>
+    `<option value="${s}" ${s === current ? 'selected' : ''}>${s}</option>`
+  ).join('');
+  return `<select class="crm-select ${esc(current || 'New')}" onchange="${onchangeFn}(this,'${esc(spotifyId)}')">${opts}</select>`;
+}
+
+// ── Pitch copy helper ────────────────────────────────────────────
+function copyPitch(owner, genre, position, market, playlistName) {
+  const g   = genre || 'music';
+  const msg = `Hey ${owner || 'there'}, I noticed your ${g} playlist "${playlistName || 'playlist'}" is ranking #${position} in ${market} — I'd love to chat about a potential collaboration! 🎵`;
+  navigator.clipboard.writeText(msg).then(() => showToast('Pitch copied to clipboard ✓'));
+}
 
 // ── Helpers ──────────────────────────────────────────────────────
 const el  = (id) => document.getElementById(id);
@@ -1835,7 +2017,8 @@ function navigate(view) {
   const titles = {
     dashboard:'Dashboard', rankings:'Rankings', opportunities:'Opportunities',
     alerts:'Alerts', playlists:'Playlists', keywords:'Keywords', settings:'Settings',
-    trends:'Trends', 'market-map':'Market Map', leads:'Lead CRM', acquisition:'Acquisition Scout',
+    trends:'Trends', 'market-map':'Market Map', leads:'Lead CRM',
+    acquisition:'Acquisition Scout', genres:'Target Genres',
   };
   el('page-title').textContent = titles[view] || view;
   if (view === 'dashboard')     renderDashboard();
@@ -1849,6 +2032,7 @@ function navigate(view) {
   if (view === 'market-map')    loadMarketMap();
   if (view === 'leads')         loadLeads();
   if (view === 'acquisition')   loadAcquisition();
+  if (view === 'genres')        loadGenres();
 }
 
 // ── Init ─────────────────────────────────────────────────────────
@@ -1939,6 +2123,7 @@ async function renderDashboard() {
   renderDashAlerts();
   if (S.selectedPlaylist) loadFollowerChart(S.selectedPlaylist);
   loadMarketShareChart();
+  loadScoutAlerts();
 }
 
 function renderPlaylistTabs() {
@@ -2693,13 +2878,14 @@ function renderLeads() {
     return `
       <tr>
         <td>
-          <div class="td-name" style="max-width:160px">${esc(l.playlist_name || '—')}</div>
+          <div class="td-name" style="max-width:150px">${esc(l.playlist_name || '—')}</div>
           ${l.followers ? `<div class="td-label">${fmtNum(l.followers)} followers</div>` : ''}
         </td>
         <td><strong style="font-weight:500">${esc(l.owner || '—')}</strong></td>
         <td>${infBadge}</td>
-        <td><span class="badge-mkt">${esc(l.market)}</span></td>
+        <td>${tierBadge(l.market)} <span class="badge-mkt" style="margin-left:3px">${esc(l.market)}</span></td>
         <td><span class="text-muted" style="font-size:12px;font-style:italic">${esc(l.genre || '—')}</span></td>
+        <td>${crmSelect(l.spotify_id, l.crm_status, 'updateCRMStatus')}</td>
         <td><div class="action-btns">${btns.join('') || '<span class="text-muted">—</span>'}</div></td>
       </tr>
     `;
@@ -2761,15 +2947,22 @@ function sortAcquisition(key) {
 }
 
 function renderAcquisition() {
-  const tbody  = el('acq-tbody');
-  const q      = (el('acq-search')?.value || '').toLowerCase();
-  const genre  = el('acq-genre-filter')?.value  || '';
-  const market = el('acq-market-filter')?.value || '';
+  const tbody        = el('acq-tbody');
+  const q            = (el('acq-search')?.value || '').toLowerCase();
+  const genre        = el('acq-genre-filter')?.value     || '';
+  const market       = el('acq-market-filter')?.value    || '';
+  const follRange    = el('acq-followers-filter')?.value || '';
+  const statusFilter = el('acq-status-filter')?.value    || '';
 
   let rows = [...(S.acquisition || [])];
-  if (q)      rows = rows.filter(r => (r.playlist_name || '').toLowerCase().includes(q) || (r.owner || '').toLowerCase().includes(q));
+  if (q)      rows = rows.filter(r => (r.playlist_name||'').toLowerCase().includes(q) || (r.owner||'').toLowerCase().includes(q));
   if (genre)  rows = rows.filter(r => r.genre  === genre);
   if (market) rows = rows.filter(r => r.market === market);
+  if (statusFilter) rows = rows.filter(r => (r.crm_status || 'New') === statusFilter);
+  if (follRange) {
+    const [lo, hi] = follRange.split('-').map(Number);
+    rows = rows.filter(r => r.followers >= lo && r.followers <= hi);
+  }
 
   const { key, dir } = S.acqSort;
   rows.sort((a, b) => (Number(a[key] ?? 0) - Number(b[key] ?? 0)) * dir);
@@ -2777,40 +2970,64 @@ function renderAcquisition() {
   el('acq-count').textContent = `${rows.length} gem${rows.length !== 1 ? 's' : ''}`;
 
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--ink3)">${S.acquisition.length ? 'No results match the filter.' : 'No undervalued gems yet — run a Master Sync first.'}</td></tr>`;
+    const msg = S.acquisition.length ? 'No results match the filters.' : 'No undervalued gems yet — run a Master Sync first.';
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--ink3)">${msg}</td></tr>`;
     return;
   }
 
   const maxScore = Math.max(...rows.map(r => Number(r.opportunity_score)), 1);
+  const maxYield = Math.max(...rows.map(r => Number(r.yield_score)), 1);
 
   tbody.innerHTML = rows.map(r => {
-    const score   = Number(r.opportunity_score) || 0;
-    const scorePct = Math.round((score / maxScore) * 100);
+    const score    = Number(r.opportunity_score) || 0;
+    const yScore   = Number(r.yield_score)       || 0;
+    const scorePct = Math.round((score  / maxScore) * 100);
+    const yPct     = Math.round((yScore / maxYield) * 100);
     const priority = score >= 60 ? 'high' : score >= 30 ? 'med' : 'low';
-    const label    = score >= 60 ? 'High Priority' : score >= 30 ? 'Watchlist' : 'Low';
+    const label    = score >= 60 ? 'High' : score >= 30 ? 'Watch' : 'Low';
+    const crmSt    = r.crm_status || 'New';
 
-    const ci   = r.contact_info || {};
-    const btns = [];
-    if ((ci.emails     || []).length) btns.push(`<a class="action-btn email" href="mailto:${esc(ci.emails[0])}" title="${esc(ci.emails[0])}">✉ Email</a>`);
-    if ((ci.instagrams || []).length) {
-      const h = ci.instagrams[0].replace('@','');
-      btns.push(`<a class="action-btn ig" href="https://ig.me/m/${esc(h)}" target="_blank" rel="noopener">✉ DM</a>`);
+    const ci       = r.contact_info || {};
+    const emails   = ci.emails     || [];
+    const igs      = ci.instagrams || [];
+    const trees    = ci.linktrees  || [];
+    const hasContact = emails.length || igs.length || trees.length;
+
+    const actBtns = [];
+    if (emails.length) {
+      actBtns.push(`<a class="action-btn email" href="mailto:${esc(emails[0])}" title="${esc(emails[0])}">✉ Email</a>`);
+      actBtns.push(`<button class="action-btn copy" onclick="copyText('${esc(emails[0])}','Email copied')">⎘</button>`);
     }
-    if ((ci.linktrees  || []).length) btns.push(`<a class="action-btn tree" href="https://${esc(ci.linktrees[0])}" target="_blank" rel="noopener">🌿</a>`);
-    const hasContact = btns.length > 0;
-    btns.push(`<a class="action-btn copy" href="https://open.spotify.com/playlist/${esc(r.spotify_id)}" target="_blank" rel="noopener" title="Open in Spotify">▶ Spotify</a>`);
+    if (igs.length) {
+      const h = igs[0].replace('@','');
+      actBtns.push(`<a class="action-btn ig" href="https://ig.me/m/${esc(h)}" target="_blank" rel="noopener">✉ DM</a>`);
+    }
+    if (trees.length) actBtns.push(`<a class="action-btn tree" href="https://${esc(trees[0])}" target="_blank" rel="noopener">🌿</a>`);
+    actBtns.push(`<button class="action-btn copy" onclick="copyPitch('${esc(r.owner)}','${esc(r.genre)}',${r.position},'${esc(r.market)}','${esc(r.playlist_name)}')">📋 Pitch</button>`);
+    actBtns.push(`<a class="action-btn copy" href="https://open.spotify.com/playlist/${esc(r.spotify_id)}" target="_blank" rel="noopener">▶</a>`);
 
     return `
       <tr>
         <td>
-          <div class="td-name" style="max-width:150px">${esc(r.playlist_name || '—')}</div>
-          ${hasContact ? '<div class="td-label" style="color:var(--green)">● Has contact</div>' : ''}
+          <div class="td-name" style="max-width:140px">${esc(r.playlist_name || '—')}</div>
+          <div style="display:flex;gap:4px;margin-top:2px;flex-wrap:wrap">
+            ${hasContact ? '<span style="font-size:10px;color:var(--green);font-weight:600">● contact</span>' : ''}
+            ${r.is_dormant ? '<span class="dormant-chip">💤 Dormant?</span>' : ''}
+          </div>
         </td>
-        <td style="font-size:12.5px">${esc(r.owner || '—')}</td>
+        <td>
+          <div style="font-size:12.5px;font-weight:500">${esc(r.owner || '—')}</div>
+          <div style="display:flex;gap:4px;margin-top:2px">${tierBadge(r.market)} <span class="badge-mkt">${esc(r.market)}</span></div>
+        </td>
         <td>${posBadge(r.position)}</td>
-        <td class="text-muted">${fmtNum(r.followers)}</td>
-        <td><span class="text-muted" style="font-size:12px;font-style:italic">${esc(r.genre || '—')}</span></td>
-        <td><span class="badge-mkt">${esc(r.market)}</span></td>
+        <td class="text-muted" style="font-size:12.5px">${fmtNum(r.followers)}</td>
+        <td>
+          <div class="yield-bar">
+            <span class="yield-num">${yScore}</span>
+            <div class="yield-track"><div class="yield-fill" style="width:${yPct}%"></div></div>
+          </div>
+        </td>
+        <td><span class="text-muted" style="font-size:11.5px;font-style:italic">${esc(r.genre || '—')}</span></td>
         <td>
           <div class="opp-score-bar">
             <span class="opp-score-num">${score}</span>
@@ -2818,10 +3035,137 @@ function renderAcquisition() {
             <span class="priority-badge ${priority}">${label}</span>
           </div>
         </td>
-        <td><div class="action-btns">${btns.join('')}</div></td>
+        <td>
+          <div style="display:flex;flex-direction:column;gap:5px">
+            ${crmSelect(r.spotify_id, crmSt, 'updateCRMStatus')}
+            <div class="action-btns">${actBtns.join('')}</div>
+          </div>
+        </td>
       </tr>
     `;
   }).join('');
+}
+
+// ── Priority Scout Alerts (Dashboard panel) ───────────────────────
+async function loadScoutAlerts() {
+  const panel = el('dash-scout-panel');
+  const list  = el('dash-scout-list');
+  try {
+    const alerts = await api('/api/acquisition-alerts');
+    S.scoutAlerts = alerts;
+    if (!alerts.length) {
+      panel.style.display = 'none';
+      return;
+    }
+    panel.style.display = 'block';
+    list.innerHTML = alerts.slice(0, 8).map(a => {
+      const ci = a.contact_info || {};
+      const hasEmail = (ci.emails || []).length > 0;
+      const hasIg    = (ci.instagrams || []).length > 0;
+      return `
+        <div class="scout-card">
+          <div class="scout-icon">🎯</div>
+          <div class="scout-info">
+            <div class="scout-title">${esc(a.playlist_name || '—')}</div>
+            <div class="scout-meta">
+              ${esc(a.owner || '—')} ·
+              ${tierBadge(a.market)} ${esc(a.market)} ·
+              <span style="font-style:italic;color:var(--ink3)">${esc(a.genre || '—')}</span>
+            </div>
+          </div>
+          ${posBadge(a.position)}
+          <span class="text-muted" style="font-size:12px;margin-left:8px">${fmtNum(a.followers)} followers</span>
+          <div class="action-btns" style="margin-left:12px">
+            ${hasEmail ? `<a class="action-btn email" href="mailto:${esc(ci.emails[0])}">✉ Email</a>` : ''}
+            ${hasIg    ? `<a class="action-btn ig" href="https://ig.me/m/${esc(ci.instagrams[0].replace('@',''))}" target="_blank">✉ DM</a>` : ''}
+            <button class="action-btn copy" onclick="copyPitch('${esc(a.owner)}','${esc(a.genre)}',${a.position},'${esc(a.market)}','${esc(a.playlist_name)}')">📋 Pitch</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch(e) {
+    panel.style.display = 'none';
+  }
+}
+
+// ── Target Genres view ────────────────────────────────────────────
+async function loadGenres() {
+  try {
+    S.genres = await api('/api/genres');
+    renderGenres();
+  } catch(e) {
+    el('genres-list').innerHTML = '<span class="text-muted">Failed to load genres.</span>';
+  }
+}
+
+function renderGenres() {
+  const container = el('genres-list');
+  const count     = el('genres-count');
+  count.textContent = `${S.genres.length} genre${S.genres.length !== 1 ? 's' : ''}`;
+  if (!S.genres.length) {
+    container.innerHTML = '<span class="text-muted">No target genres yet.</span>';
+    return;
+  }
+  container.innerHTML = S.genres.map(g => `
+    <div class="genre-tag">
+      ${esc(g.name)}
+      <button class="genre-remove" title="Remove" onclick="removeGenre(${g.id},'${esc(g.name)}')">✕</button>
+    </div>
+  `).join('');
+}
+
+async function addGenre() {
+  const input = el('genre-input');
+  const name  = input.value.trim().toLowerCase();
+  if (!name) { showToast('Enter a genre name', 'error'); return; }
+  try {
+    const g = await api('/api/genres', { method: 'POST', body: JSON.stringify({ name }) });
+    if (!g.duplicate) {
+      S.genres.push(g);
+      S.genres.sort((a,b) => a.name.localeCompare(b.name));
+    }
+    input.value = '';
+    renderGenres();
+    showToast(`"${name}" ${g.duplicate ? 'already tracked' : 'added — will be crawled on next sync'}`);
+  } catch(e) {
+    showToast('Failed to add genre', 'error');
+  }
+}
+
+async function removeGenre(id, name) {
+  if (!confirm(`Remove genre "${name}"? This won't delete existing keywords.`)) return;
+  try {
+    await api(`/api/genres/${id}`, { method: 'DELETE' });
+    S.genres = S.genres.filter(g => g.id !== id);
+    renderGenres();
+    showToast(`"${name}" removed`);
+  } catch(e) {
+    showToast('Failed to remove genre', 'error');
+  }
+}
+
+// ── CRM status update (shared by leads + acquisition) ─────────────
+async function updateCRMStatus(selectEl, spotifyId) {
+  const status = selectEl.value;
+  selectEl.className = `crm-select ${status}`;
+  try {
+    await api(`/api/crm/${encodeURIComponent(spotifyId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+    showToast(`Status → ${status}`);
+  } catch(e) {
+    showToast('Failed to update status', 'error');
+  }
+}
+
+async function updateCRMNotes(spotifyId, notes) {
+  try {
+    await api(`/api/crm/${encodeURIComponent(spotifyId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ notes }),
+    });
+  } catch(e) { /* silent */ }
 }
 
 // ── Seasonal suggestions ──────────────────────────────────────────

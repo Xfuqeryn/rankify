@@ -103,6 +103,33 @@ async function initDB() {
     ALTER TABLE curator_snapshots ADD COLUMN IF NOT EXISTS genre  TEXT;
   `);
 
+  // Session 5 — M&A Suite tables
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS target_genres (
+      id         SERIAL PRIMARY KEY,
+      name       TEXT UNIQUE NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS acquisition_crm (
+      spotify_id         TEXT PRIMARY KEY,
+      status             TEXT DEFAULT 'New',
+      notes              TEXT DEFAULT '',
+      snapshot_at        TIMESTAMPTZ DEFAULT NOW(),
+      snapshot_followers INT,
+      updated_at         TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
+  // Seed default target genres if table is empty
+  await pool.query(`
+    INSERT INTO target_genres (name) VALUES
+      ('lo-fi'), ('ambient'), ('sleep'), ('study'), ('focus'),
+      ('chill'), ('house'), ('deep house'), ('tech house'),
+      ('indie pop'), ('hip hop'), ('r&b'), ('jazz'), ('pop')
+    ON CONFLICT (name) DO NOTHING
+  `);
+
   console.log('Database initialized');
 }
 
@@ -372,6 +399,9 @@ async function runCrawl() {
   syncState.progress  = 0;
   syncState.total     = 0;
 
+  // Declared outside try so finally can always clearInterval
+  let heartbeat;
+
   console.log('[sync] Master Sync starting…');
 
   try {
@@ -398,8 +428,13 @@ async function runCrawl() {
 
     // ── 2. Build Master Sync keyword plan (genre × all markets × 50 terms) ──
     const ownedPlaylists = playlists.filter(p => !p.is_competitor);
-    const allGenres      = [...new Set(ownedPlaylists.map(p => p.genre).filter(Boolean))];
-    if (!allGenres.length) allGenres.push('music'); // fallback
+
+    // Merge: user-managed target genres + auto-detected playlist genres
+    const { rows: targetGenreRows } = await pool.query('SELECT name FROM target_genres ORDER BY name');
+    const targetGenres   = targetGenreRows.map(r => r.name);
+    const detectedGenres = ownedPlaylists.map(p => p.genre).filter(Boolean);
+    const allGenres      = [...new Set([...targetGenres, ...detectedGenres])];
+    if (!allGenres.length) allGenres.push('music'); // last-resort fallback
 
     syncState.current = 'Planning global keyword matrix…';
 
@@ -508,7 +543,7 @@ async function runCrawl() {
     const metaCache = new Map();
 
     // ── Heartbeat: log every 30s so Render logs confirm the process is alive ──
-    const heartbeat = setInterval(() => {
+    heartbeat = setInterval(() => {
       console.log(
         `[sync] ♥ heartbeat — ${syncState.progress}/${syncState.total} keywords done | now: ${syncState.current}`
       );
@@ -630,7 +665,28 @@ async function runCrawl() {
       }
     }
 
-    // ── 6. Finalise ──────────────────────────────────────────────────────────
+    // ── 6. Auto-seed acquisition_crm for new undervalued gems ───────────────
+    syncState.current = 'Seeding acquisition CRM…';
+    try {
+      await pool.query(`
+        INSERT INTO acquisition_crm (spotify_id, snapshot_followers, snapshot_at)
+        SELECT DISTINCT ON (cs.spotify_id)
+          cs.spotify_id,
+          cs.followers,
+          NOW()
+        FROM curator_snapshots cs
+        WHERE cs.position BETWEEN 1 AND 10
+          AND cs.followers > 0
+          AND cs.followers < 5000
+          AND cs.spotify_id NOT IN (SELECT spotify_id FROM playlists)
+        ORDER BY cs.spotify_id, cs.position ASC
+        ON CONFLICT (spotify_id) DO NOTHING
+      `);
+    } catch (e) {
+      console.error('[sync] crm seed error:', e.message);
+    }
+
+    // ── 7. Finalise ──────────────────────────────────────────────────────────
     syncState.current = 'Finalizing…';
 
     await pool.query(`
@@ -1238,87 +1294,6 @@ app.get('/api/seo-scores', async (req, res) => {
   }
 });
 
-// Curator leads — ranked by Market Influence (distinct top-10 spots owned)
-app.get('/api/leads', async (req, res) => {
-  try {
-    const { rows } = await pool.query(`
-      WITH ranked_contacts AS (
-        SELECT DISTINCT ON (cs.spotify_id)
-          cs.spotify_id,
-          cs.playlist_name,
-          cs.owner,
-          cs.followers,
-          cs.contact_info,
-          cs.position,
-          cs.genre,
-          k.term,
-          k.market,
-          cs.checked_at
-        FROM curator_snapshots cs
-        JOIN keywords k ON k.id = cs.keyword_id
-        WHERE cs.contact_info IS NOT NULL
-          AND cs.contact_info != '{}'::jsonb
-          AND cs.contact_info::text NOT IN ('{}','null','""')
-        ORDER BY cs.spotify_id, cs.position ASC
-      ),
-      influence AS (
-        SELECT cs.spotify_id,
-               COUNT(DISTINCT cs.keyword_id) FILTER (WHERE cs.position <= 10) AS influence_count
-        FROM curator_snapshots cs
-        WHERE cs.position <= 10
-        GROUP BY cs.spotify_id
-      )
-      SELECT rc.*, COALESCE(inf.influence_count, 0) AS influence_count
-      FROM ranked_contacts rc
-      LEFT JOIN influence inf ON inf.spotify_id = rc.spotify_id
-      ORDER BY influence_count DESC, rc.position ASC
-    `);
-    res.json(rows);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// Acquisition — undervalued gems: rank #1-5, <5k followers, not our playlist
-app.get('/api/acquisition', async (req, res) => {
-  try {
-    const { rows } = await pool.query(`
-      WITH our_ids AS (SELECT spotify_id FROM playlists),
-      latest AS (
-        SELECT DISTINCT ON (cs.spotify_id)
-          cs.spotify_id,
-          cs.playlist_name,
-          cs.owner,
-          cs.followers,
-          cs.contact_info,
-          cs.genre,
-          cs.position,
-          k.term,
-          k.market,
-          cs.checked_at,
-          -- Opportunity Score: higher rank + lower followers = higher score
-          ROUND(
-            ((6 - cs.position) * 15.0)
-            + GREATEST(0, (5000 - COALESCE(cs.followers, 0))::float / 100)
-          ) AS opportunity_score
-        FROM curator_snapshots cs
-        JOIN keywords k ON k.id = cs.keyword_id
-        WHERE cs.position BETWEEN 1 AND 5
-          AND cs.followers > 0
-          AND cs.followers < 5000
-          AND cs.spotify_id NOT IN (SELECT spotify_id FROM our_ids)
-        ORDER BY cs.spotify_id, cs.position ASC
-      )
-      SELECT * FROM latest
-      ORDER BY opportunity_score DESC, position ASC
-      LIMIT 100
-    `);
-    res.json(rows);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
 // Sync status — polled by frontend during crawl
 app.get('/api/sync-status', (req, res) => {
   res.json({
@@ -1387,6 +1362,191 @@ app.get('/api/market-share', async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// ── Target Genres CRUD ────────────────────────────────────────────────────────
+
+app.get('/api/genres', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM target_genres ORDER BY name');
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/genres', async (req, res) => {
+  try {
+    const name = (req.body.name || '').toLowerCase().trim();
+    if (!name) return res.status(400).json({ error: 'name required' });
+    const { rows } = await pool.query(
+      `INSERT INTO target_genres (name) VALUES ($1) ON CONFLICT (name) DO NOTHING RETURNING *`,
+      [name]
+    );
+    res.json(rows[0] || { name, duplicate: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/genres/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM target_genres WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Acquisition CRM ───────────────────────────────────────────────────────────
+
+app.patch('/api/crm/:spotifyId', async (req, res) => {
+  try {
+    const { status, notes } = req.body;
+    const { rows } = await pool.query(`
+      INSERT INTO acquisition_crm (spotify_id, status, notes, updated_at)
+      VALUES ($1, $2, $3, NOW())
+      ON CONFLICT (spotify_id) DO UPDATE
+        SET status = COALESCE($2, acquisition_crm.status),
+            notes  = COALESCE($3, acquisition_crm.notes),
+            updated_at = NOW()
+      RETURNING *
+    `, [req.params.spotifyId, status || 'New', notes ?? '']);
+    res.json(rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Priority Scout Alerts ─────────────────────────────────────────────────────
+
+const SCOUT_GENRES = [
+  'lo-fi','lofi','lo fi','ambient','sleep','study','focus','chill',
+  'house','deep house','tech house','afro house','afro-house','melodic house',
+  'chillout','downtempo','new age','meditation','binaural',
+];
+
+app.get('/api/acquisition-alerts', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      WITH our_ids AS (SELECT spotify_id FROM playlists),
+      gems AS (
+        SELECT DISTINCT ON (cs.spotify_id)
+          cs.spotify_id,
+          cs.playlist_name,
+          cs.owner,
+          cs.followers,
+          cs.position,
+          cs.genre,
+          cs.contact_info,
+          k.market,
+          k.term,
+          ac.status AS crm_status
+        FROM curator_snapshots cs
+        JOIN keywords k ON k.id = cs.keyword_id
+        LEFT JOIN acquisition_crm ac ON ac.spotify_id = cs.spotify_id
+        WHERE cs.position BETWEEN 1 AND 10
+          AND cs.followers > 0
+          AND cs.followers < 5000
+          AND cs.spotify_id NOT IN (SELECT spotify_id FROM our_ids)
+          AND cs.contact_info IS NOT NULL
+          AND cs.contact_info != '{}'::jsonb
+          AND cs.contact_info::text NOT IN ('{}','null','""')
+        ORDER BY cs.spotify_id, cs.position ASC
+      )
+      SELECT * FROM gems ORDER BY position ASC, followers ASC LIMIT 50
+    `);
+    // Filter to core genres server-side for flexibility
+    const scoutSet = new Set(SCOUT_GENRES);
+    const alerts = rows.filter(r => {
+      const g = (r.genre || '').toLowerCase();
+      return SCOUT_GENRES.some(sg => g.includes(sg));
+    });
+    res.json(alerts);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Updated Acquisition endpoint — with yield, dormancy, tier, CRM ────────────
+
+app.get('/api/acquisition', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      WITH our_ids AS (SELECT spotify_id FROM playlists),
+      latest AS (
+        SELECT DISTINCT ON (cs.spotify_id)
+          cs.spotify_id,
+          cs.playlist_name,
+          cs.owner,
+          cs.followers,
+          cs.contact_info,
+          cs.genre,
+          cs.position,
+          k.term,
+          k.market,
+          cs.checked_at,
+          ROUND(((6 - cs.position) * 15.0) + GREATEST(0, (5000 - COALESCE(cs.followers,0))::float / 100)) AS opportunity_score,
+          ROUND(((11.0 - cs.position) * 100.0) / SQRT(GREATEST(cs.followers, 100)))::int AS yield_score
+        FROM curator_snapshots cs
+        JOIN keywords k ON k.id = cs.keyword_id
+        WHERE cs.position BETWEEN 1 AND 10
+          AND cs.followers > 0
+          AND cs.followers < 5000
+          AND cs.spotify_id NOT IN (SELECT spotify_id FROM our_ids)
+        ORDER BY cs.spotify_id, cs.position ASC
+      )
+      SELECT
+        l.*,
+        COALESCE(ac.status, 'New')                                       AS crm_status,
+        COALESCE(ac.notes, '')                                            AS crm_notes,
+        (
+          ac.snapshot_at IS NOT NULL
+          AND ac.snapshot_at < NOW() - INTERVAL '30 days'
+          AND ABS(COALESCE(l.followers,0) - COALESCE(ac.snapshot_followers,0)) <= 100
+        )                                                                  AS is_dormant
+      FROM latest l
+      LEFT JOIN acquisition_crm ac ON ac.spotify_id = l.spotify_id
+      ORDER BY opportunity_score DESC, position ASC
+      LIMIT 200
+    `);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Updated Leads endpoint — with CRM status ──────────────────────────────────
+
+app.get('/api/leads', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      WITH ranked_contacts AS (
+        SELECT DISTINCT ON (cs.spotify_id)
+          cs.spotify_id,
+          cs.playlist_name,
+          cs.owner,
+          cs.followers,
+          cs.contact_info,
+          cs.position,
+          cs.genre,
+          k.term,
+          k.market,
+          cs.checked_at
+        FROM curator_snapshots cs
+        JOIN keywords k ON k.id = cs.keyword_id
+        WHERE cs.contact_info IS NOT NULL
+          AND cs.contact_info != '{}'::jsonb
+          AND cs.contact_info::text NOT IN ('{}','null','""')
+        ORDER BY cs.spotify_id, cs.position ASC
+      ),
+      influence AS (
+        SELECT cs.spotify_id,
+               COUNT(DISTINCT cs.keyword_id) FILTER (WHERE cs.position <= 10) AS influence_count
+        FROM curator_snapshots cs
+        WHERE cs.position <= 10
+        GROUP BY cs.spotify_id
+      )
+      SELECT
+        rc.*,
+        COALESCE(inf.influence_count, 0)  AS influence_count,
+        COALESCE(ac.status, 'New')        AS crm_status,
+        COALESCE(ac.notes, '')            AS crm_notes
+      FROM ranked_contacts rc
+      LEFT JOIN influence inf ON inf.spotify_id = rc.spotify_id
+      LEFT JOIN acquisition_crm ac ON ac.spotify_id = rc.spotify_id
+      ORDER BY influence_count DESC, rc.position ASC
+    `);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Trigger crawl
