@@ -871,6 +871,58 @@
       flex-shrink: 0;
     }
 
+    /* ── Competitor row tinting ───────────────────────────────── */
+    .rankings-table tbody tr.competitor td { background: rgba(229,72,77,0.04); }
+    .rankings-table tbody tr.competitor:hover td { background: rgba(229,72,77,0.09); }
+    @media (prefers-color-scheme: dark) {
+      .rankings-table tbody tr.competitor td { background: rgba(229,72,77,0.07); }
+      .rankings-table tbody tr.competitor:hover td { background: rgba(229,72,77,0.14); }
+    }
+    .competitor-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--red);
+      background: var(--red-bg);
+      padding: 1px 6px;
+      border-radius: 4px;
+      margin-left: 4px;
+    }
+
+    /* ── Toggle switch ────────────────────────────────────────── */
+    .toggle-row { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+    .toggle-row input[type="checkbox"] { display: none; }
+    .toggle-track {
+      width: 36px; height: 20px; border-radius: 10px;
+      background: var(--surface3); border: 0.5px solid var(--border2);
+      position: relative; transition: background 0.2s, border-color 0.2s; flex-shrink: 0;
+    }
+    .toggle-row input:checked ~ .toggle-track { background: var(--red); border-color: var(--red); }
+    .toggle-thumb {
+      position: absolute; top: 2px; left: 2px;
+      width: 14px; height: 14px; border-radius: 50%; background: #fff;
+      transition: left 0.18s; box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    }
+    .toggle-row input:checked ~ .toggle-track .toggle-thumb { left: 18px; }
+    .toggle-label { font-size: 13px; color: var(--ink2); }
+
+    /* ── Market-share chart wrap ──────────────────────────────── */
+    .dash-bottom {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .market-share-legend {
+      display: flex; gap: 14px; justify-content: center; margin-top: 10px; flex-wrap: wrap;
+    }
+    .ms-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink2); }
+    .ms-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .ms-no-data { padding: 40px 0; text-align: center; color: var(--ink3); font-size: 13px; }
+
     /* ── Misc ─────────────────────────────────────────────────── */
     .view { display: none; }
     .view.active { display: block; }
@@ -1001,16 +1053,33 @@
         </div>
       </div>
 
-      <!-- Follower chart -->
-      <div class="chart-wrap">
-        <div class="chart-header">
-          <div>
-            <div class="chart-title">Follower Growth</div>
-            <div class="chart-sub">Last 90 days</div>
+      <!-- Bottom row: follower growth + market share -->
+      <div class="dash-bottom">
+        <!-- Follower chart -->
+        <div class="chart-wrap" style="margin-top:0">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Follower Growth</div>
+              <div class="chart-sub">Last 90 days</div>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="follower-chart"></canvas>
           </div>
         </div>
-        <div class="chart-canvas-wrap">
-          <canvas id="follower-chart"></canvas>
+
+        <!-- Market share -->
+        <div class="chart-wrap" style="margin-top:0">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Market Share</div>
+              <div class="chart-sub">Top 10 rankings</div>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap" style="height:140px;display:flex;align-items:center;justify-content:center">
+            <canvas id="market-share-chart"></canvas>
+          </div>
+          <div class="market-share-legend" id="market-share-legend"></div>
         </div>
       </div>
     </div>
@@ -1190,6 +1259,15 @@
       <label class="modal-label">Notes <span style="color:var(--ink3);font-weight:400">(optional)</span></label>
       <input class="input" id="pl-notes" placeholder="Internal notes…" />
     </div>
+    <div class="modal-field">
+      <label class="modal-label">Competitor</label>
+      <label class="toggle-row">
+        <input type="checkbox" id="pl-is-competitor" />
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        <span class="toggle-label">Track as a competitor playlist</span>
+      </label>
+      <div class="modal-hint" style="margin-top:8px">Competitor playlists are highlighted in the Rankings table and counted separately in Market Share.</div>
+    </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('modal-playlist')">Cancel</button>
       <button class="btn primary" id="pl-add-btn" onclick="addPlaylist()">Add Playlist</button>
@@ -1238,6 +1316,7 @@ const S = {
   market: '',
   selectedPlaylist: null,
   chart: null,
+  marketShareChart: null,
   notionConnected: localStorage.getItem('notion_connected') === 'true',
   dashAlerts: [],
 };
@@ -1417,6 +1496,7 @@ async function renderDashboard() {
   renderDashKeywords();
   renderDashAlerts();
   if (S.selectedPlaylist) loadFollowerChart(S.selectedPlaylist);
+  loadMarketShareChart();
 }
 
 function renderPlaylistTabs() {
@@ -1547,6 +1627,63 @@ async function loadFollowerChart(playlistId) {
   }
 }
 
+// ── Market share chart ────────────────────────────────────────────
+async function loadMarketShareChart() {
+  const legend  = el('market-share-legend');
+  try {
+    const data = await api('/api/market-share');
+    const { summary } = data;
+
+    if (S.marketShareChart) { S.marketShareChart.destroy(); S.marketShareChart = null; }
+
+    if (!summary || summary.total === 0) {
+      const ctx = el('market-share-chart').getContext('2d');
+      // draw empty placeholder
+      legend.innerHTML = '<span class="ms-no-data">No top-10 rankings yet</span>';
+      return;
+    }
+
+    const ctx = el('market-share-chart').getContext('2d');
+    S.marketShareChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Label', 'Competitors'],
+        datasets: [{
+          data: [summary.label, summary.competitors],
+          backgroundColor: ['#1db954', '#e5484d'],
+          borderColor: 'transparent',
+          hoverOffset: 6,
+          borderRadius: 4,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '68%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0f0f0f',
+            titleColor: '#a3a3a3',
+            bodyColor: '#ffffff',
+            padding: 10,
+            callbacks: {
+              label: (ctx) => ` ${ctx.label}: ${ctx.parsed} (${Math.round((ctx.parsed / summary.total) * 100)}%)`,
+            },
+          },
+        },
+      },
+    });
+
+    legend.innerHTML = `
+      <div class="ms-legend-item"><div class="ms-legend-dot" style="background:#1db954"></div>Label <strong>${summary.label_pct}%</strong></div>
+      <div class="ms-legend-item"><div class="ms-legend-dot" style="background:#e5484d"></div>Competitors <strong>${summary.competitor_pct}%</strong></div>
+    `;
+  } catch (e) {
+    if (legend) legend.innerHTML = '<span class="ms-no-data">—</span>';
+  }
+}
+
 // ── Rankings ──────────────────────────────────────────────────────
 function renderRankings() {
   let rows = [...S.rankings];
@@ -1559,14 +1696,18 @@ function renderRankings() {
   }
 
   tbody.innerHTML = rows.map(r => `
-    <tr>
+    <tr class="${r.is_competitor ? 'competitor' : ''}">
       <td><strong style="font-weight:500">${esc(r.term)}</strong></td>
       <td>
         <div class="td-playlist">
           ${artOrFallback(r.image_url, r.playlist_name, 28)}
           <div>
-            <div class="td-name">${esc(r.playlist_name)}</div>
+            <div class="td-name">
+              ${esc(r.playlist_name)}
+              ${r.is_competitor ? '<span class="competitor-badge">Competitor</span>' : ''}
+            </div>
             ${r.label ? `<div class="td-label">${esc(r.label)}</div>` : ''}
+            ${r.genre ? `<div class="td-label" style="font-style:italic">${esc(r.genre)}</div>` : ''}
           </div>
         </div>
       </td>
@@ -1675,7 +1816,9 @@ function renderPlaylists() {
         <div class="pl-meta">${esc(p.owner||'')}${p.followers ? ' · ' + fmtNum(p.followers) + ' followers' : ''}${p.label ? ' · ' + p.label : ''}</div>
       </div>
       <div class="pl-actions">
+        ${p.is_competitor ? '<span class="competitor-badge" style="font-size:11px;padding:2px 8px;border-radius:var(--rpill)">Competitor</span>' : ''}
         ${p.label ? `<span class="label-badge">${esc(p.label)}</span>` : ''}
+        ${p.genre ? `<span class="label-badge" style="font-style:italic">${esc(p.genre)}</span>` : ''}
         <a class="ext-link" href="https://open.spotify.com/playlist/${esc(p.spotify_id)}" target="_blank" rel="noopener">Open ↗</a>
         <button class="btn sm danger" onclick="removePlaylist(${p.id})">Remove</button>
       </div>
@@ -1685,16 +1828,17 @@ function renderPlaylists() {
 
 async function addPlaylist() {
   const btn = el('pl-add-btn');
-  const spotifyUrl = el('pl-url').value.trim();
-  const label      = el('pl-label').value.trim();
-  const notes      = el('pl-notes').value.trim();
+  const spotifyUrl   = el('pl-url').value.trim();
+  const label        = el('pl-label').value.trim();
+  const notes        = el('pl-notes').value.trim();
+  const isCompetitor = el('pl-is-competitor').checked;
   if (!spotifyUrl) { showToast('Please enter a Spotify URL', 'error'); return; }
   btn.disabled = true;
   btn.textContent = 'Adding…';
   try {
     const pl = await api('/api/playlists', {
       method: 'POST',
-      body: JSON.stringify({ spotifyUrl, label, notes }),
+      body: JSON.stringify({ spotifyUrl, label, notes, isCompetitor }),
     });
     S.playlists.unshift(pl);
     if (!S.selectedPlaylist) S.selectedPlaylist = pl.id;
@@ -1705,7 +1849,8 @@ async function addPlaylist() {
     el('pl-url').value = '';
     el('pl-label').value = '';
     el('pl-notes').value = '';
-    showToast(`"${pl.name}" added`);
+    el('pl-is-competitor').checked = false;
+    showToast(`"${pl.name}" added${isCompetitor ? ' as competitor' : ''}`);
   } catch(e) {
     showToast(e.message || 'Failed to add playlist', 'error');
   } finally {

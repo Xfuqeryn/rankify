@@ -72,6 +72,13 @@ async function initDB() {
     CREATE INDEX IF NOT EXISTS idx_rh_keyword   ON rank_history(keyword_id);
     CREATE INDEX IF NOT EXISTS idx_rh_checked   ON rank_history(checked_at);
   `);
+
+  // Safe migrations — idempotent on every start (works on Render + existing DBs)
+  await pool.query(`
+    ALTER TABLE playlists ADD COLUMN IF NOT EXISTS is_competitor BOOLEAN DEFAULT FALSE;
+    ALTER TABLE playlists ADD COLUMN IF NOT EXISTS genre TEXT;
+  `);
+
   console.log('Database initialized');
 }
 
@@ -111,6 +118,39 @@ async function spotifyGet(urlPath) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// ─── Genre detection ─────────────────────────────────────────────────────────
+
+async function detectGenre(spotifyId) {
+  try {
+    // Grab first 5 tracks — only need artist IDs
+    const tracksData = await spotifyGet(
+      `/playlists/${spotifyId}/tracks?limit=5&fields=items(track(artists(id)))`
+    );
+    const artistIds = [
+      ...new Set(
+        (tracksData?.items || [])
+          .flatMap((it) => (it?.track?.artists || []).map((a) => a.id))
+          .filter(Boolean)
+      ),
+    ].slice(0, 5);
+
+    if (!artistIds.length) return null;
+
+    await sleep(250);
+    const artistsData = await spotifyGet(`/artists?ids=${artistIds.join(',')}`);
+    const allGenres = (artistsData?.artists || []).flatMap((a) => a?.genres || []);
+    if (!allGenres.length) return null;
+
+    // Return the most-frequently appearing genre
+    const freq = {};
+    for (const g of allGenres) freq[g] = (freq[g] || 0) + 1;
+    return Object.entries(freq).sort((a, b) => b[1] - a[1])[0][0];
+  } catch (e) {
+    console.error(`[genre] ${spotifyId}:`, e.message);
+    return null;
+  }
+}
+
 // ─── Core crawl ──────────────────────────────────────────────────────────────
 
 async function runCrawl() {
@@ -122,6 +162,19 @@ async function runCrawl() {
     if (!playlists.length || !keywords.length) {
       console.log('[crawl] nothing to crawl');
       return;
+    }
+
+    // Detect genre for playlists that don't have one yet
+    for (const playlist of playlists) {
+      if (!playlist.genre) {
+        const genre = await detectGenre(playlist.spotify_id);
+        if (genre) {
+          await pool.query('UPDATE playlists SET genre=$1 WHERE id=$2', [genre, playlist.id]);
+          playlist.genre = genre;
+          console.log(`[genre] ${playlist.name} → ${genre}`);
+        }
+        await sleep(250);
+      }
     }
 
     // group keywords by market
@@ -357,7 +410,7 @@ app.get('/api/playlists', async (req, res) => {
 
 app.post('/api/playlists', async (req, res) => {
   try {
-    const { spotifyUrl, label, notes } = req.body;
+    const { spotifyUrl, label, notes, isCompetitor } = req.body;
     const match = spotifyUrl?.match(/playlist\/([A-Za-z0-9]+)/);
     if (!match) return res.status(400).json({ error: 'Invalid Spotify playlist URL' });
     const sid = match[1];
@@ -367,10 +420,10 @@ app.post('/api/playlists', async (req, res) => {
     );
 
     const { rows } = await pool.query(
-      `INSERT INTO playlists (spotify_id, name, owner, followers, image_url, label, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)
+      `INSERT INTO playlists (spotify_id, name, owner, followers, image_url, label, notes, is_competitor)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
        ON CONFLICT (spotify_id) DO UPDATE
-         SET name=$2, owner=$3, followers=$4, image_url=$5, label=$6, notes=$7
+         SET name=$2, owner=$3, followers=$4, image_url=$5, label=$6, notes=$7, is_competitor=$8
        RETURNING *`,
       [
         data.id,
@@ -380,6 +433,7 @@ app.post('/api/playlists', async (req, res) => {
         data.images?.[0]?.url || null,
         label || null,
         notes || null,
+        isCompetitor === true || isCompetitor === 'true',
       ]
     );
     res.json(rows[0]);
@@ -390,10 +444,10 @@ app.post('/api/playlists', async (req, res) => {
 
 app.patch('/api/playlists/:id', async (req, res) => {
   try {
-    const { label, notes } = req.body;
+    const { label, notes, is_competitor } = req.body;
     const { rows } = await pool.query(
-      'UPDATE playlists SET label=$1, notes=$2 WHERE id=$3 RETURNING *',
-      [label, notes, req.params.id]
+      `UPDATE playlists SET label=$1, notes=$2, is_competitor=COALESCE($3, is_competitor) WHERE id=$4 RETURNING *`,
+      [label, notes, is_competitor ?? null, req.params.id]
     );
     res.json(rows[0]);
   } catch (e) {
@@ -467,9 +521,11 @@ app.get('/api/rankings', async (req, res) => {
       SELECT
         l.playlist_id,
         l.keyword_id,
-        p.name       AS playlist_name,
+        p.name          AS playlist_name,
         p.image_url,
         p.label,
+        p.genre,
+        p.is_competitor,
         k.term,
         k.market,
         l.position,
@@ -652,6 +708,57 @@ app.post('/api/notion/sync', async (req, res) => {
     `);
     syncToNotion(rows).catch(console.error);
     res.json({ ok: true, rows: rows.length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Market share — % of Top-10 rankings owned by label vs competitors, per keyword
+app.get('/api/market-share', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      WITH latest AS (
+        SELECT DISTINCT ON (rh.playlist_id, rh.keyword_id)
+          rh.playlist_id, rh.keyword_id, rh.position,
+          p.is_competitor,
+          k.term, k.market
+        FROM rank_history rh
+        JOIN playlists p ON p.id = rh.playlist_id
+        JOIN keywords  k ON k.id = rh.keyword_id
+        WHERE rh.position IS NOT NULL AND rh.position <= 10
+        ORDER BY rh.playlist_id, rh.keyword_id, rh.checked_at DESC
+      )
+      SELECT
+        term,
+        market,
+        COUNT(*) FILTER (WHERE is_competitor = false OR is_competitor IS NULL) AS label_count,
+        COUNT(*) FILTER (WHERE is_competitor = true)                           AS competitor_count,
+        COUNT(*)                                                               AS total
+      FROM latest
+      GROUP BY term, market
+      ORDER BY term, market
+    `);
+
+    const totalLabel      = rows.reduce((s, r) => s + Number(r.label_count), 0);
+    const totalCompetitor = rows.reduce((s, r) => s + Number(r.competitor_count), 0);
+    const total           = totalLabel + totalCompetitor;
+
+    res.json({
+      summary: {
+        label:       totalLabel,
+        competitors: totalCompetitor,
+        total,
+        label_pct:      total ? Math.round((totalLabel / total) * 100) : 0,
+        competitor_pct: total ? Math.round((totalCompetitor / total) * 100) : 0,
+      },
+      byKeyword: rows.map((r) => ({
+        term:           r.term,
+        market:         r.market,
+        label_count:    Number(r.label_count),
+        competitor_count: Number(r.competitor_count),
+        total:          Number(r.total),
+      })),
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
