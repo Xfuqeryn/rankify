@@ -871,6 +871,75 @@
       flex-shrink: 0;
     }
 
+    /* ── Volatility badge ────────────────────────────────────── */
+    .vol-badge {
+      display: inline-flex; align-items: center;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.04em;
+      padding: 2px 6px; border-radius: 4px;
+    }
+    .vol-badge.low  { background: var(--surface3); color: var(--ink3); }
+    .vol-badge.med  { background: var(--amber-bg); color: var(--amber); }
+    .vol-badge.high { background: var(--red-bg);   color: var(--red); }
+
+    /* ── Ease-score badge ────────────────────────────────────── */
+    .ease-badge {
+      display: inline-flex; align-items: center;
+      font-size: 11.5px; font-weight: 700;
+      padding: 3px 9px; border-radius: 6px;
+    }
+    .ease-badge.easy { background: var(--green-bg); color: var(--green); }
+    .ease-badge.med  { background: var(--amber-bg); color: var(--amber); }
+    .ease-badge.hard { background: var(--red-bg);   color: var(--red); }
+    .ease-badge.none { background: var(--surface3); color: var(--ink3); }
+
+    /* ── Lead contact chips ───────────────────────────────────── */
+    .lead-contacts { display: flex; flex-wrap: wrap; gap: 4px; max-width: 320px; }
+    .lead-contact {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 500;
+      padding: 2px 8px; border-radius: var(--rpill);
+      text-decoration: none; cursor: pointer;
+      transition: opacity 0.12s;
+    }
+    .lead-contact:hover { opacity: 0.75; }
+    .lead-contact.email   { background: var(--blue-bg);  color: var(--blue); }
+    .lead-contact.ig      { background: var(--red-bg);   color: var(--red); }
+    .lead-contact.tree    { background: var(--green-bg); color: var(--green); }
+    .lead-contact.discord { background: var(--blue-bg);  color: var(--blue); }
+    .lead-contact.sub     { background: var(--amber-bg); color: var(--amber); }
+
+    /* ── Seasonal tag strip ───────────────────────────────────── */
+    .seasonal-strip {
+      background: var(--surface);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--rlg);
+      padding: 12px 16px 14px;
+      margin-bottom: 12px;
+    }
+    .seasonal-strip-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+      text-transform: uppercase; color: var(--ink3); margin-bottom: 8px;
+    }
+    .seasonal-tag {
+      display: inline-flex; align-items: center;
+      background: var(--surface2); border: 0.5px solid var(--border2);
+      border-radius: var(--rpill); padding: 4px 11px;
+      font-size: 12.5px; font-weight: 500; color: var(--ink2);
+      cursor: pointer; transition: all 0.12s; user-select: none;
+    }
+    .seasonal-tag:hover { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+
+    /* ── Breakout card ────────────────────────────────────────── */
+    .breakout-card {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 18px; border-bottom: 0.5px solid var(--border);
+      transition: background 0.1s;
+    }
+    .breakout-card:last-child { border-bottom: none; }
+    .breakout-card:hover { background: var(--surface2); }
+    .breakout-kw  { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+    .breakout-meta { font-size: 12px; color: var(--ink3); }
+
     /* ── Competitor row tinting ───────────────────────────────── */
     .rankings-table tbody tr.competitor td { background: rgba(229,72,77,0.04); }
     .rankings-table tbody tr.competitor:hover td { background: rgba(229,72,77,0.09); }
@@ -979,6 +1048,22 @@
     <div class="nav-item" data-view="settings" onclick="navigate('settings')">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 1.5v1M7.5 12.5v1M1.5 7.5h1M12.5 7.5h1M3.3 3.3l.7.7M11 11l.7.7M11 3.3l-.7.7M3.3 11l.7-.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       Settings
+    </div>
+  </div>
+
+  <div class="nav-section" style="margin-top:8px">
+    <div class="nav-section-label">Intel</div>
+    <div class="nav-item" data-view="trends" onclick="navigate('trends')">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1 11l4-4 3 2 5-6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Trends
+    </div>
+    <div class="nav-item" data-view="market-map" onclick="navigate('market-map')">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M5 1.5v12M10 1.5v12M1.5 5h12M1.5 10h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Market Map
+    </div>
+    <div class="nav-item" data-view="leads" onclick="navigate('leads')">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 13c0-3 2.5-4.5 5.5-4.5S13 10 13 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M10.5 7l1 1 2-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Leads
     </div>
   </div>
 
@@ -1150,6 +1235,16 @@
     <!-- ── KEYWORDS ───────────────────────────────────────────── -->
     <div class="view" data-view="keywords" id="view-keywords">
       <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px;margin-bottom:16px">Keywords</div>
+
+      <!-- Seasonal suggestions -->
+      <div class="seasonal-strip" id="seasonal-panel" style="display:none">
+        <div class="seasonal-strip-label">
+          🗓 Seasonal Boosts — <span id="seasonal-month"></span>
+          <span style="font-weight:400;text-transform:none;letter-spacing:0;margin-left:4px;color:var(--ink3)">Click any suffix to append to your keyword</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px" id="seasonal-tags"></div>
+      </div>
+
       <div class="kw-add-form" id="kw-add-form">
         <input class="input" id="kw-input" placeholder="e.g. indie pop" style="flex:1" onkeydown="if(event.key==='Enter')addKeyword()" />
         <select class="select" id="kw-market" style="width:110px">
@@ -1231,6 +1326,134 @@
         <div class="settings-row">
           <span class="settings-row-label">Status</span>
           <span class="status-dot ok" id="settings-spotify-status">Active</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TRENDS ────────────────────────────────────────────── -->
+    <div class="view" data-view="trends" id="view-trends">
+      <div class="flex-between section-gap">
+        <div>
+          <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Ranking Trends</div>
+          <div class="text-muted" style="margin-top:3px">Position velocity &amp; breakout keywords</div>
+        </div>
+      </div>
+
+      <!-- Breakout panel -->
+      <div class="panel section-gap">
+        <div class="panel-header">
+          <span class="panel-title">🚀 Breakout Keywords</span>
+          <span class="panel-meta">Rising fastest over the last 7 days</span>
+        </div>
+        <div class="panel-body" id="breakout-list"></div>
+      </div>
+
+      <!-- Velocity table -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Ranking Velocity</span>
+          <span class="panel-meta">All tracked keywords</span>
+        </div>
+        <div class="panel-body">
+          <table class="rankings-table">
+            <thead>
+              <tr>
+                <th>Keyword</th>
+                <th>Playlist</th>
+                <th>Now</th>
+                <th>1d ago</th>
+                <th>7d ago</th>
+                <th>30d ago</th>
+                <th>7d Δ</th>
+                <th>Volatility</th>
+              </tr>
+            </thead>
+            <tbody id="trends-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MARKET MAP ──────────────────────────────────────────── -->
+    <div class="view" data-view="market-map" id="view-market-map">
+      <div class="flex-between section-gap">
+        <div>
+          <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Market Map</div>
+          <div class="text-muted" style="margin-top:3px">SEO opportunity scores &amp; market leaders</div>
+        </div>
+      </div>
+
+      <!-- SEO opportunity scores -->
+      <div class="panel section-gap">
+        <div class="panel-header">
+          <span class="panel-title">SEO Opportunity Scores</span>
+          <span class="panel-meta">Ease of Entry — 10 = easiest to break into</span>
+        </div>
+        <div class="panel-body">
+          <table class="rankings-table">
+            <thead>
+              <tr>
+                <th>Keyword</th>
+                <th>Market</th>
+                <th>Avg Top-10 Followers</th>
+                <th>Top Spot</th>
+                <th>Ease Score</th>
+              </tr>
+            </thead>
+            <tbody id="seo-scores-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Market leaders -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Market Leaders</span>
+          <span class="panel-meta">Top curators ranked by top-10 appearances</span>
+        </div>
+        <div class="panel-body">
+          <table class="rankings-table">
+            <thead>
+              <tr>
+                <th>Curator</th>
+                <th>Market</th>
+                <th>Top-10 Slots</th>
+                <th>Keywords</th>
+                <th>Avg Followers</th>
+              </tr>
+            </thead>
+            <tbody id="market-leaders-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LEADS ───────────────────────────────────────────────── -->
+    <div class="view" data-view="leads" id="view-leads">
+      <div class="flex-between section-gap">
+        <div>
+          <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Leads</div>
+          <div class="text-muted" style="margin-top:3px">Curator contacts extracted from top-20 search results</div>
+        </div>
+        <button class="btn sm" onclick="exportLeadsCSV()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v7M3.5 5.5L6 8l2.5-2.5M1.5 9.5v1a.5.5 0 00.5.5h8a.5.5 0 00.5-.5v-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Export CSV
+        </button>
+      </div>
+      <div class="panel">
+        <div class="panel-body">
+          <table class="rankings-table">
+            <thead>
+              <tr>
+                <th>Playlist</th>
+                <th>Owner</th>
+                <th>Position</th>
+                <th>Keyword</th>
+                <th>Contacts</th>
+              </tr>
+            </thead>
+            <tbody id="leads-tbody"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -1317,6 +1540,7 @@ const S = {
   selectedPlaylist: null,
   chart: null,
   marketShareChart: null,
+  leads: [],
   notionConnected: localStorage.getItem('notion_connected') === 'true',
   dashAlerts: [],
 };
@@ -1398,15 +1622,22 @@ function navigate(view) {
   S.view = view;
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === view));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.dataset.view === view));
-  const titles = { dashboard:'Dashboard', rankings:'Rankings', opportunities:'Opportunities', alerts:'Alerts', playlists:'Playlists', keywords:'Keywords', settings:'Settings' };
+  const titles = {
+    dashboard:'Dashboard', rankings:'Rankings', opportunities:'Opportunities',
+    alerts:'Alerts', playlists:'Playlists', keywords:'Keywords', settings:'Settings',
+    trends:'Trends', 'market-map':'Market Map', leads:'Leads',
+  };
   el('page-title').textContent = titles[view] || view;
   if (view === 'dashboard')     renderDashboard();
   if (view === 'rankings')      renderRankings();
   if (view === 'opportunities') loadOpportunities();
   if (view === 'alerts')        loadAlerts();
   if (view === 'playlists')     renderPlaylists();
-  if (view === 'keywords')      renderKeywords();
+  if (view === 'keywords')      { renderKeywords(); loadSeasonalSuggestions(); }
   if (view === 'settings')      renderSettings();
+  if (view === 'trends')        loadTrends();
+  if (view === 'market-map')    loadMarketMap();
+  if (view === 'leads')         loadLeads();
 }
 
 // ── Init ─────────────────────────────────────────────────────────
@@ -1888,12 +2119,18 @@ function renderKeywords() {
     <div class="kw-group">
       <div class="kw-group-label">${esc(mkt)}</div>
       <div class="kw-tags">
-        ${grouped[mkt].map(k => `
-          <div class="kw-tag">
-            ${esc(k.term)}
-            <button class="kw-remove" title="Remove" onclick="removeKeyword(${k.id})">✕</button>
-          </div>
-        `).join('')}
+        ${grouped[mkt].map(k => {
+          const vol = Number(k.volatility) || 0;
+          const volHtml = vol > 0
+            ? `<span class="vol-badge ${vol >= 5 ? 'high' : 'med'}" style="font-size:9px;padding:1px 5px;margin-left:2px">${vol.toFixed(0)}</span>`
+            : '';
+          return `
+            <div class="kw-tag">
+              ${esc(k.term)}${volHtml}
+              <button class="kw-remove" title="Remove" onclick="removeKeyword(${k.id})">✕</button>
+            </div>
+          `;
+        }).join('')}
       </div>
     </div>
   `).join('');
@@ -2012,6 +2249,206 @@ async function triggerCrawl() {
     updateLastSync();
     showToast('Rankings updated');
   }, 20000);
+}
+
+// ── Volatility / Ease helpers ─────────────────────────────────────
+function volatilityBadge(vol) {
+  const v = Number(vol) || 0;
+  if (v === 0) return `<span class="vol-badge low">Low</span>`;
+  if (v < 5)   return `<span class="vol-badge med">Med ${v}</span>`;
+  return             `<span class="vol-badge high">High ${v}</span>`;
+}
+
+function easeScoreBadge(score) {
+  if (!score) return `<span class="ease-badge none">—</span>`;
+  const s = Number(score);
+  const cls = s >= 7 ? 'easy' : s >= 4 ? 'med' : 'hard';
+  return `<span class="ease-badge ${cls}">${s.toFixed(1)}</span>`;
+}
+
+// ── Trends ────────────────────────────────────────────────────────
+async function loadTrends() {
+  const breakoutEl = el('breakout-list');
+  const tbody      = el('trends-tbody');
+  breakoutEl.innerHTML = `<div class="panel-empty text-muted">Loading…</div>`;
+  tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--ink3)">Loading…</td></tr>`;
+  try {
+    const rows = await api('/api/trends');
+
+    // Breakout: delta_7d >= 5 (gained 5+ positions in 7 days)
+    const breakouts = rows
+      .filter(r => Number(r.delta_7d) >= 5)
+      .sort((a, b) => Number(b.delta_7d) - Number(a.delta_7d));
+
+    if (breakouts.length) {
+      breakoutEl.innerHTML = breakouts.map(r => `
+        <div class="breakout-card">
+          <div style="flex:1">
+            <div class="breakout-kw">${esc(r.term)}</div>
+            <div class="breakout-meta">${esc(r.playlist_name)} · ${esc(r.market)}</div>
+          </div>
+          <span class="delta up" style="margin-right:8px">↑${r.delta_7d} this week</span>
+          ${posBadge(r.current_pos)}
+        </div>
+      `).join('');
+    } else {
+      breakoutEl.innerHTML = '<div class="panel-empty">No breakout keywords yet — run more crawls to build trend data.</div>';
+    }
+
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--ink3)">No trend data yet. Run a crawl first.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td>
+          <strong style="font-weight:500">${esc(r.term)}</strong>
+          <span class="badge-mkt" style="margin-left:6px">${esc(r.market)}</span>
+        </td>
+        <td><span class="td-name" style="max-width:130px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.playlist_name)}</span></td>
+        <td>${posBadge(r.current_pos)}</td>
+        <td class="text-muted">${r.pos_1d  ? '#' + r.pos_1d  : '—'}</td>
+        <td class="text-muted">${r.pos_7d  ? '#' + r.pos_7d  : '—'}</td>
+        <td class="text-muted">${r.pos_30d ? '#' + r.pos_30d : '—'}</td>
+        <td>${deltaBadge(r.current_pos, r.pos_7d)}</td>
+        <td>${volatilityBadge(r.volatility)}</td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    breakoutEl.innerHTML = '<div class="panel-empty" style="color:var(--red)">Failed to load.</div>';
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--red)">Error loading trend data.</td></tr>`;
+  }
+}
+
+// ── Market Map ────────────────────────────────────────────────────
+async function loadMarketMap() {
+  const seoTbody = el('seo-scores-tbody');
+  const mlTbody  = el('market-leaders-tbody');
+  const loading  = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--ink3)">Loading…</td></tr>`;
+  seoTbody.innerHTML = mlTbody.innerHTML = loading;
+  try {
+    const [seoScores, leaders] = await Promise.all([
+      api('/api/seo-scores'),
+      api('/api/market-leaders'),
+    ]);
+
+    seoTbody.innerHTML = !seoScores.length
+      ? `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--ink3)">No data yet — run a crawl first.</td></tr>`
+      : seoScores.map(s => `
+          <tr>
+            <td><strong style="font-weight:500">${esc(s.term)}</strong></td>
+            <td><span class="badge-mkt">${esc(s.market)}</span></td>
+            <td class="text-muted">${s.avg_followers ? fmtNum(s.avg_followers) : '—'}</td>
+            <td>
+              ${s.top1_owner ? `<span style="font-size:12.5px">${esc(s.top1_owner)}</span>` : '—'}
+              ${s.top_spot_indie ? ' <span class="opp-chip type-quick_win" style="font-size:10px;padding:1px 6px">indie ⚡</span>' : ''}
+            </td>
+            <td>${easeScoreBadge(s.ease_score)}</td>
+          </tr>
+        `).join('');
+
+    mlTbody.innerHTML = !leaders.length
+      ? `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--ink3)">No curator data yet — run a crawl first.</td></tr>`
+      : leaders.slice(0, 30).map(l => `
+          <tr>
+            <td><strong style="font-weight:500">${esc(l.owner)}</strong></td>
+            <td><span class="badge-mkt">${esc(l.market)}</span></td>
+            <td><span class="badge-pos ${Number(l.top10_count) >= 5 ? 'top3' : Number(l.top10_count) >= 3 ? 'top10' : 'ranked'}">${l.top10_count}</span></td>
+            <td class="text-muted">${l.keyword_count}</td>
+            <td class="text-muted">${l.avg_followers ? fmtNum(l.avg_followers) : '—'}</td>
+          </tr>
+        `).join('');
+  } catch (e) {
+    const err = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--red)">Failed to load data.</td></tr>`;
+    seoTbody.innerHTML = mlTbody.innerHTML = err;
+  }
+}
+
+// ── Leads ─────────────────────────────────────────────────────────
+async function loadLeads() {
+  const tbody = el('leads-tbody');
+  tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--ink3)">Loading…</td></tr>`;
+  try {
+    S.leads = await api('/api/leads');
+    if (!S.leads.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--ink3)">No leads yet — run a crawl to extract curator contacts from top-20 results.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = S.leads.map(l => {
+      const ci    = l.contact_info || {};
+      const chips = [];
+      (ci.emails     || []).forEach(e => chips.push(`<a href="mailto:${esc(e)}" class="lead-contact email">✉ ${esc(e)}</a>`));
+      (ci.instagrams || []).forEach(i => chips.push(`<a href="https://instagram.com/${esc(i.replace('@',''))}" target="_blank" rel="noopener" class="lead-contact ig">◉ ${esc(i)}</a>`));
+      (ci.linktrees  || []).forEach(t => chips.push(`<a href="https://${esc(t)}" target="_blank" rel="noopener" class="lead-contact tree">🌿 ${esc(t)}</a>`));
+      (ci.discords   || []).forEach(d => chips.push(`<span class="lead-contact discord">💬 ${esc(d)}</span>`));
+      (ci.submithubs || []).forEach(s => chips.push(`<a href="https://${esc(s)}" target="_blank" rel="noopener" class="lead-contact sub">⬆ ${esc(s)}</a>`));
+      return `
+        <tr>
+          <td>
+            <div class="td-name" style="max-width:160px">${esc(l.playlist_name || '—')}</div>
+            ${l.followers ? `<div class="td-label">${fmtNum(l.followers)} followers</div>` : ''}
+          </td>
+          <td><strong style="font-weight:500">${esc(l.owner || '—')}</strong></td>
+          <td>${posBadge(l.position)}</td>
+          <td>
+            <strong style="font-weight:500">${esc(l.term)}</strong>
+            <span class="badge-mkt" style="margin-left:4px">${esc(l.market)}</span>
+          </td>
+          <td><div class="lead-contacts">${chips.join('') || '<span class="text-muted">—</span>'}</div></td>
+        </tr>
+      `;
+    }).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--red)">Failed to load leads.</td></tr>`;
+  }
+}
+
+function exportLeadsCSV() {
+  if (!S.leads || !S.leads.length) { showToast('No leads to export', 'error'); return; }
+  const headers = ['Playlist','Owner','Position','Keyword','Market','Emails','Instagram','Linktree','Discord','SubmitHub'];
+  const lines = S.leads.map(l => {
+    const ci = l.contact_info || {};
+    return [
+      l.playlist_name || '', l.owner || '', l.position || '',
+      l.term, l.market,
+      (ci.emails     || []).join(' | '),
+      (ci.instagrams || []).join(' | '),
+      (ci.linktrees  || []).join(' | '),
+      (ci.discords   || []).join(' | '),
+      (ci.submithubs || []).join(' | '),
+    ];
+  });
+  const csv = [headers, ...lines].map(row =>
+    row.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')
+  ).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = `rankify-leads-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  showToast(`Exported ${S.leads.length} leads`);
+}
+
+// ── Seasonal suggestions ──────────────────────────────────────────
+async function loadSeasonalSuggestions() {
+  try {
+    const data  = await api('/api/seasonal-suggestions');
+    const panel = el('seasonal-panel');
+    const tags  = el('seasonal-tags');
+    el('seasonal-month').textContent = data.month || '';
+    if (!data.suffixes || !data.suffixes.length) { panel.style.display = 'none'; return; }
+    tags.innerHTML = data.suffixes.map(s =>
+      `<span class="seasonal-tag" onclick="appendSeasonal('${esc(s)}')">${esc(s)}</span>`
+    ).join('');
+    panel.style.display = 'block';
+  } catch (e) { /* silently skip */ }
+}
+
+function appendSeasonal(suffix) {
+  const input   = el('kw-input');
+  const current = input.value.trim();
+  input.value   = current ? `${current} ${suffix}` : suffix;
+  input.focus();
+  showToast(`"${suffix}" appended to keyword`);
 }
 
 // ── Boot ──────────────────────────────────────────────────────────
