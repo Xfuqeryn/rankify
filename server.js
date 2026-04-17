@@ -97,6 +97,12 @@ async function initDB() {
     CREATE INDEX IF NOT EXISTS idx_cs_owner   ON curator_snapshots(owner);
   `);
 
+  // Session 4 migrations — idempotent
+  await pool.query(`
+    ALTER TABLE keywords          ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'manual';
+    ALTER TABLE curator_snapshots ADD COLUMN IF NOT EXISTS genre  TEXT;
+  `);
+
   console.log('Database initialized');
 }
 
@@ -136,6 +142,21 @@ async function spotifyGet(urlPath) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// ─── Market tiers ─────────────────────────────────────────────────────────────
+const TIER1       = ['US', 'GB', 'DE'];
+const TIER2       = ['FR', 'NL', 'BR'];
+const TIER3       = ['TR', 'ID', 'PH', 'VN'];
+const ALL_MARKETS = [...TIER1, ...TIER2, ...TIER3];
+
+// ─── Sync state (shared across requests) ─────────────────────────────────────
+const syncState = {
+  running:   false,
+  current:   '',
+  progress:  0,
+  total:     0,
+  startedAt: null,
+};
+
 // ─── Genre detection ─────────────────────────────────────────────────────────
 
 async function detectGenre(spotifyId) {
@@ -167,6 +188,43 @@ async function detectGenre(spotifyId) {
     console.error(`[genre] ${spotifyId}:`, e.message);
     return null;
   }
+}
+
+// ─── Localized keyword generator (for Master Sync) ───────────────────────────
+
+function getLocalizedTerms(genre, market) {
+  const g    = (genre || 'music').toLowerCase().trim();
+  const year = new Date().getFullYear();
+
+  const base = [
+    `${g} playlist`, `${g} mix`, `best ${g}`, `top ${g}`,
+    `new ${g}`, `${g} hits`, `${g} vibes`, `${g} essentials`,
+    `${g} ${year}`, `${g} radio`, `${g} new music`,
+    `chill ${g}`, `${g} songs`, `${g} classics`,
+    `best ${g} playlist`, `top ${g} songs ${year}`,
+  ];
+
+  const byMarket = {
+    DE: [`${g} playlist deutsch`, `${g} musik`, `beste ${g} songs`,
+         `neue ${g} musik`, `${g} hits deutsch`],
+    FR: [`playlist ${g} français`, `musique ${g}`, `meilleure playlist ${g}`,
+         `nouveau ${g}`, `${g} hits français`],
+    NL: [`${g} playlist nederland`, `${g} muziek`, `beste ${g} playlist`,
+         `nieuwe ${g} muziek`, `${g} hits nederland`],
+    BR: [`playlist ${g} brasil`, `música ${g}`, `melhor playlist ${g}`,
+         `${g} brasileiro`, `${g} hits brasil`],
+    TR: [`${g} playlist türkçe`, `${g} müzik`, `en iyi ${g} playlist`,
+         `yeni ${g} müzik`, `${g} türkçe hits`],
+    ID: [`playlist ${g} indonesia`, `musik ${g}`, `${g} terbaik indonesia`,
+         `${g} terbaru`, `lagu ${g} terpopuler`],
+    PH: [`${g} playlist philippines`, `${g} opm`, `best ${g} ph`,
+         `${g} music ph ${year}`, `pinoy ${g} playlist`],
+    VN: [`nhạc ${g}`, `playlist ${g} việt`, `${g} việt nam`,
+         `nhạc ${g} hay nhất`, `bài hát ${g}`],
+  };
+
+  const localized = byMarket[market] || [];
+  return [...new Set([...base, ...localized])].slice(0, 50);
 }
 
 // ─── SEO keyword discovery ───────────────────────────────────────────────────
@@ -300,19 +358,32 @@ function getSeasonalSuffixes() {
   return [...new Set(s)];
 }
 
-// ─── Core crawl ──────────────────────────────────────────────────────────────
+// ─── Master Sync Engine ───────────────────────────────────────────────────────
 
 async function runCrawl() {
-  console.log('[crawl] starting…');
+  if (syncState.running) {
+    console.log('[sync] already running — skipping duplicate trigger');
+    return;
+  }
+
+  syncState.running   = true;
+  syncState.startedAt = new Date().toISOString();
+  syncState.current   = 'Starting…';
+  syncState.progress  = 0;
+  syncState.total     = 0;
+
+  console.log('[sync] Master Sync starting…');
+
   try {
     const { rows: playlists } = await pool.query('SELECT * FROM playlists');
 
     if (!playlists.length) {
-      console.log('[crawl] no playlists');
+      console.log('[sync] no playlists — aborting');
       return;
     }
 
-    // ── 1. Genre detection ────────────────────────────────────────────────────
+    // ── 1. Genre detection for all playlists ────────────────────────────────
+    syncState.current = 'Detecting genres…';
     for (const playlist of playlists) {
       if (!playlist.genre) {
         const genre = await detectGenre(playlist.spotify_id);
@@ -325,19 +396,48 @@ async function runCrawl() {
       }
     }
 
-    // ── 2. Autonomous keyword discovery (owned playlists, once per 7 days) ───
+    // ── 2. Build Master Sync keyword plan (genre × all markets × 50 terms) ──
     const ownedPlaylists = playlists.filter(p => !p.is_competitor);
-    const DISCOVERY_TTL  = 7 * 24 * 3600 * 1000;
+    const allGenres      = [...new Set(ownedPlaylists.map(p => p.genre).filter(Boolean))];
+    if (!allGenres.length) allGenres.push('music'); // fallback
+
+    syncState.current = 'Planning global keyword matrix…';
+
+    // genre × market combos → localized term lists
+    const masterPlan = []; // [{ genre, market, terms[] }]
+    for (const genre of allGenres) {
+      for (const market of ALL_MARKETS) {
+        const terms = getLocalizedTerms(genre, market); // up to 50 terms
+        masterPlan.push({ genre, market, terms });
+      }
+    }
+
+    // Insert master_sync keywords (idempotent — ON CONFLICT DO NOTHING)
+    for (const { genre, market, terms } of masterPlan) {
+      for (const term of terms) {
+        await pool.query(
+          `INSERT INTO keywords (term, market, source) VALUES ($1,$2,'master_sync')
+           ON CONFLICT (term, market) DO NOTHING`,
+          [term.toLowerCase(), market]
+        );
+      }
+    }
+
+    // Build a quick lookup: term+market → genre (for snapshot tagging)
+    const termGenreMap = {};
+    for (const { genre, market, terms } of masterPlan) {
+      for (const t of terms) termGenreMap[`${t.toLowerCase()}|${market}`] = genre;
+    }
+
+    // ── 3. Autonomous keyword discovery for owned playlists (once per 7d) ───
+    const DISCOVERY_TTL = 7 * 24 * 3600 * 1000;
 
     for (const playlist of ownedPlaylists) {
       const lastDisc = playlist.last_discovery ? new Date(playlist.last_discovery).getTime() : 0;
-      if (Date.now() - lastDisc < DISCOVERY_TTL) {
-        console.log(`[discovery] ${playlist.name}: skipping (ran recently)`);
-        continue;
-      }
+      if (Date.now() - lastDisc < DISCOVERY_TTL) continue;
 
       const candidates = discoverKeywords(playlist);
-      console.log(`[discovery] ${playlist.name}: scanning ${candidates.length} candidate terms`);
+      console.log(`[discovery] ${playlist.name}: scanning ${candidates.length} candidates`);
 
       for (const term of candidates) {
         const { rows: existing } = await pool.query(
@@ -355,7 +455,8 @@ async function runCrawl() {
           const found = items.some(it => ownedPlaylists.some(p => p.spotify_id === it.id));
           if (found) {
             await pool.query(
-              `INSERT INTO keywords (term, market) VALUES ($1,'US') ON CONFLICT (term, market) DO NOTHING`,
+              `INSERT INTO keywords (term, market, source) VALUES ($1,'US','manual')
+               ON CONFLICT (term, market) DO NOTHING`,
               [term.toLowerCase()]
             );
             console.log(`[discovery] auto-tracked: "${term}"`);
@@ -371,14 +472,15 @@ async function runCrawl() {
       );
     }
 
-    // Refresh keyword list after discovery
+    // Refresh full keyword list after mutations
     const { rows: allKeywords } = await pool.query('SELECT * FROM keywords');
     if (!allKeywords.length) {
-      console.log('[crawl] no keywords');
+      console.log('[sync] no keywords to crawl');
       return;
     }
 
-    // ── 3. Pre-fetch follower counts once per playlist ────────────────────────
+    // ── 4. Pre-fetch follower counts once per tracked playlist ───────────────
+    syncState.current = 'Pre-fetching follower counts…';
     const followerMap = {};
     for (const playlist of playlists) {
       await sleep(350);
@@ -387,36 +489,50 @@ async function runCrawl() {
         followerMap[playlist.id] = pl?.followers?.total ?? playlist.followers;
       } catch (e) {
         followerMap[playlist.id] = playlist.followers;
-        console.error(`[crawl] followers ${playlist.spotify_id}:`, e.message);
+        console.error(`[sync] followers ${playlist.spotify_id}:`, e.message);
       }
     }
 
-    // ── 4. Main crawl: top 100 per keyword + curator snapshots ───────────────
+    // ── 5. Master Crawl Loop ─────────────────────────────────────────────────
     const byMarket = {};
     for (const kw of allKeywords) {
       (byMarket[kw.market] = byMarket[kw.market] || []).push(kw);
     }
 
+    syncState.total    = allKeywords.length;
+    syncState.progress = 0;
+
     const notionRows = [];
+    // ── Metadata cache: spotify_id → { followers, description, contacts }
+    // Prevents redundant API calls when the same playlist appears under multiple keywords.
+    const metaCache = new Map();
+
+    // ── Heartbeat: log every 30s so Render logs confirm the process is alive ──
+    const heartbeat = setInterval(() => {
+      console.log(
+        `[sync] ♥ heartbeat — ${syncState.progress}/${syncState.total} keywords done | now: ${syncState.current}`
+      );
+    }, 30000);
 
     for (const [market, kws] of Object.entries(byMarket)) {
       for (const kw of kws) {
+        syncState.progress++;
+        const kwGenre = termGenreMap[`${kw.term}|${kw.market}`] || null;
+        syncState.current = `${kwGenre || '—'} · ${market} · "${kw.term}"`;
 
-        // Two calls of 50 = top 100
+        // Single call of 50 (Tier 1-3 coverage without double API spend)
+        await sleep(350);
         let items = [];
-        for (const offset of [0, 50]) {
-          await sleep(350);
-          try {
-            const sr = await spotifyGet(
-              `/search?q=${encodeURIComponent(kw.term)}&type=playlist&market=${market}&limit=50&offset=${offset}`
-            );
-            items.push(...(sr?.playlists?.items || []).filter(Boolean));
-          } catch (e) {
-            console.error(`[crawl] search ${kw.term}/${market} +${offset}:`, e.message);
-          }
+        try {
+          const sr = await spotifyGet(
+            `/search?q=${encodeURIComponent(kw.term)}&type=playlist&market=${market}&limit=50`
+          );
+          items = (sr?.playlists?.items || []).filter(Boolean);
+        } catch (e) {
+          console.error(`[sync] search "${kw.term}"/${market}:`, e.message);
         }
 
-        // Store fresh top-20 curator snapshots
+        // Refresh curator snapshots for this keyword
         await pool.query('DELETE FROM curator_snapshots WHERE keyword_id=$1', [kw.id]);
 
         for (let i = 0; i < Math.min(20, items.length); i++) {
@@ -425,40 +541,50 @@ async function runCrawl() {
 
           let followers   = 0;
           let description = (it.description || '').slice(0, 1000);
+          let contacts    = {};
 
-          // Full fetch (followers + description) for top 10 only
-          if (i < 10) {
+          const ownerName  = (it.owner?.display_name || '').toLowerCase();
+          const isSpotify  = ownerName === 'spotify' || ownerName.startsWith('spotify ');
+
+          if (metaCache.has(it.id)) {
+            // ── Cache hit: zero API calls ──────────────────────────────────────
+            ({ followers, description, contacts } = metaCache.get(it.id));
+          } else if (i < 10 && !isSpotify) {
+            // ── Deep Scrape: only top-10, only non-Spotify curators ────────────
             await sleep(350);
             try {
-              const full = await spotifyGet(
-                `/playlists/${it.id}?fields=followers.total,description`
-              );
+              const full  = await spotifyGet(`/playlists/${it.id}?fields=followers.total,description`);
               followers   = full?.followers?.total || 0;
               description = (full?.description || description).slice(0, 1000);
+              // Only extract contacts when the playlist has meaningful reach (>100 followers)
+              contacts    = followers > 100 ? extractContacts(description) : {};
             } catch (e) {
-              console.error(`[crawl] detail ${it.id}:`, e.message);
+              console.error(`[sync] detail ${it.id}:`, e.message);
             }
+            metaCache.set(it.id, { followers, description, contacts });
           }
 
           try {
             await pool.query(`
               INSERT INTO curator_snapshots
-                (keyword_id, position, spotify_id, playlist_name, owner, followers, description, contact_info)
-              VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+                (keyword_id, position, spotify_id, playlist_name, owner,
+                 followers, description, contact_info, genre)
+              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
             `, [
               kw.id, i + 1, it.id,
               (it.name || '').slice(0, 500),
               it.owner?.display_name || null,
               followers,
               description,
-              JSON.stringify(extractContacts(description)),
+              JSON.stringify(contacts),
+              kwGenre,
             ]);
           } catch (e) {
-            console.error('[crawl] snapshot insert:', e.message);
+            console.error('[sync] snapshot insert:', e.message);
           }
         }
 
-        // Record positions for all tracked playlists
+        // Record rank_history for every tracked playlist
         for (const playlist of playlists) {
           const idx       = items.findIndex(it => it.id === playlist.spotify_id);
           const position  = idx === -1 ? null : idx + 1;
@@ -504,7 +630,9 @@ async function runCrawl() {
       }
     }
 
-    // ── 5. Sync follower counts to playlists table ────────────────────────────
+    // ── 6. Finalise ──────────────────────────────────────────────────────────
+    syncState.current = 'Finalizing…';
+
     await pool.query(`
       UPDATE playlists p
       SET followers = rh.followers
@@ -526,9 +654,13 @@ async function runCrawl() {
       syncToNotion(notionRows).catch(e => console.error('[notion]', e.message));
     }
 
-    console.log('[crawl] complete');
+    console.log(`[sync] Master Sync complete — ${allKeywords.length} keywords across ${Object.keys(byMarket).length} markets`);
   } catch (e) {
-    console.error('[crawl] error:', e);
+    console.error('[sync] error:', e);
+  } finally {
+    clearInterval(heartbeat);
+    syncState.running = false;
+    syncState.current = 'Done';
   }
 }
 
@@ -702,7 +834,7 @@ app.delete('/api/playlists/:id', async (req, res) => {
   }
 });
 
-// Keywords
+// Keywords — only expose manually-managed keywords (hide master_sync internal ones)
 app.get('/api/keywords', async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -714,6 +846,7 @@ app.get('/api/keywords', async (req, res) => {
           0
         )::numeric, 1) AS volatility
       FROM keywords k
+      WHERE k.source IS DISTINCT FROM 'master_sync'
       ORDER BY k.market, k.term
     `);
     res.json(rows);
@@ -1105,31 +1238,97 @@ app.get('/api/seo-scores', async (req, res) => {
   }
 });
 
-// Curator leads — contact info extracted from top-20 playlists
+// Curator leads — ranked by Market Influence (distinct top-10 spots owned)
 app.get('/api/leads', async (req, res) => {
   try {
     const { rows } = await pool.query(`
-      SELECT DISTINCT ON (cs.spotify_id)
-        cs.spotify_id,
-        cs.playlist_name,
-        cs.owner,
-        cs.followers,
-        cs.contact_info,
-        cs.position,
-        k.term,
-        k.market,
-        cs.checked_at
-      FROM curator_snapshots cs
-      JOIN keywords k ON k.id = cs.keyword_id
-      WHERE cs.contact_info IS NOT NULL
-        AND cs.contact_info::text NOT IN ('{}','null','""')
-        AND cs.contact_info != '{}'::jsonb
-      ORDER BY cs.spotify_id, cs.position ASC
+      WITH ranked_contacts AS (
+        SELECT DISTINCT ON (cs.spotify_id)
+          cs.spotify_id,
+          cs.playlist_name,
+          cs.owner,
+          cs.followers,
+          cs.contact_info,
+          cs.position,
+          cs.genre,
+          k.term,
+          k.market,
+          cs.checked_at
+        FROM curator_snapshots cs
+        JOIN keywords k ON k.id = cs.keyword_id
+        WHERE cs.contact_info IS NOT NULL
+          AND cs.contact_info != '{}'::jsonb
+          AND cs.contact_info::text NOT IN ('{}','null','""')
+        ORDER BY cs.spotify_id, cs.position ASC
+      ),
+      influence AS (
+        SELECT cs.spotify_id,
+               COUNT(DISTINCT cs.keyword_id) FILTER (WHERE cs.position <= 10) AS influence_count
+        FROM curator_snapshots cs
+        WHERE cs.position <= 10
+        GROUP BY cs.spotify_id
+      )
+      SELECT rc.*, COALESCE(inf.influence_count, 0) AS influence_count
+      FROM ranked_contacts rc
+      LEFT JOIN influence inf ON inf.spotify_id = rc.spotify_id
+      ORDER BY influence_count DESC, rc.position ASC
     `);
     res.json(rows);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// Acquisition — undervalued gems: rank #1-5, <5k followers, not our playlist
+app.get('/api/acquisition', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      WITH our_ids AS (SELECT spotify_id FROM playlists),
+      latest AS (
+        SELECT DISTINCT ON (cs.spotify_id)
+          cs.spotify_id,
+          cs.playlist_name,
+          cs.owner,
+          cs.followers,
+          cs.contact_info,
+          cs.genre,
+          cs.position,
+          k.term,
+          k.market,
+          cs.checked_at,
+          -- Opportunity Score: higher rank + lower followers = higher score
+          ROUND(
+            ((6 - cs.position) * 15.0)
+            + GREATEST(0, (5000 - COALESCE(cs.followers, 0))::float / 100)
+          ) AS opportunity_score
+        FROM curator_snapshots cs
+        JOIN keywords k ON k.id = cs.keyword_id
+        WHERE cs.position BETWEEN 1 AND 5
+          AND cs.followers > 0
+          AND cs.followers < 5000
+          AND cs.spotify_id NOT IN (SELECT spotify_id FROM our_ids)
+        ORDER BY cs.spotify_id, cs.position ASC
+      )
+      SELECT * FROM latest
+      ORDER BY opportunity_score DESC, position ASC
+      LIMIT 100
+    `);
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Sync status — polled by frontend during crawl
+app.get('/api/sync-status', (req, res) => {
+  res.json({
+    running:    syncState.running,
+    current:    syncState.current,
+    progress:   syncState.progress,
+    total:      syncState.total,
+    startedAt:  syncState.startedAt,
+    pct:        syncState.total > 0 ? Math.round((syncState.progress / syncState.total) * 100) : 0,
+  });
 });
 
 // Seasonal keyword suffix suggestions

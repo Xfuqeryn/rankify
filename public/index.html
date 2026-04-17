@@ -992,6 +992,135 @@
     .ms-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
     .ms-no-data { padding: 40px 0; text-align: center; color: var(--ink3); font-size: 13px; }
 
+    /* ── Sync progress bar ────────────────────────────────────── */
+    .sync-wrap {
+      margin-top: 8px;
+      display: none;
+    }
+    .sync-wrap.visible { display: block; }
+    .sync-label {
+      font-size: 10.5px;
+      color: var(--ink3);
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sync-track {
+      height: 3px;
+      background: var(--surface3);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .sync-fill {
+      height: 100%;
+      background: var(--green);
+      border-radius: 2px;
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    /* ── Acquisition priority badges ──────────────────────────── */
+    .priority-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .priority-badge.high { background: var(--green-bg);  color: var(--green); }
+    .priority-badge.med  { background: var(--amber-bg);  color: var(--amber); }
+    .priority-badge.low  { background: var(--surface3);  color: var(--ink3); }
+
+    /* ── Sortable column headers ──────────────────────────────── */
+    .rankings-table th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+    .rankings-table th.sortable:hover { color: var(--ink2); }
+    .sort-icon { font-size: 9px; margin-left: 3px; opacity: 0.5; }
+    .sort-icon.active { opacity: 1; color: var(--ink); }
+
+    /* ── Filter bar ───────────────────────────────────────────── */
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 18px;
+      border-bottom: 0.5px solid var(--border);
+      background: var(--surface);
+      flex-wrap: wrap;
+    }
+    .filter-bar .input {
+      background: var(--surface2);
+      font-size: 12.5px;
+      padding: 6px 10px;
+    }
+    .filter-bar .select {
+      font-size: 12.5px;
+      padding: 6px 28px 6px 10px;
+      background-color: var(--surface2);
+    }
+    .filter-count {
+      margin-left: auto;
+      font-size: 11.5px;
+      color: var(--ink3);
+      white-space: nowrap;
+    }
+
+    /* ── Direct action buttons ────────────────────────────────── */
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: var(--rpill);
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity 0.12s;
+      white-space: nowrap;
+    }
+    .action-btn:hover { opacity: 0.78; }
+    .action-btn.email { background: var(--blue-bg);  color: var(--blue); }
+    .action-btn.ig    { background: var(--red-bg);   color: var(--red); }
+    .action-btn.tree  { background: var(--green-bg); color: var(--green); }
+    .action-btn.sub   { background: var(--amber-bg); color: var(--amber); }
+    .action-btn.copy  { background: var(--surface3); color: var(--ink2); }
+    .action-btns { display: flex; flex-wrap: wrap; gap: 4px; }
+
+    /* ── Opportunity score bar ────────────────────────────────── */
+    .opp-score-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .opp-score-num {
+      font-family: var(--ff-serif);
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--ink);
+      min-width: 32px;
+    }
+    .opp-score-track {
+      flex: 1;
+      height: 4px;
+      background: var(--surface3);
+      border-radius: 2px;
+      overflow: hidden;
+      min-width: 48px;
+    }
+    .opp-score-fill {
+      height: 100%;
+      background: var(--green);
+      border-radius: 2px;
+    }
+
     /* ── Misc ─────────────────────────────────────────────────── */
     .view { display: none; }
     .view.active { display: block; }
@@ -1065,13 +1194,22 @@
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 13c0-3 2.5-4.5 5.5-4.5S13 10 13 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M10.5 7l1 1 2-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Leads
     </div>
+    <div class="nav-item" data-view="acquisition" onclick="navigate('acquisition')">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5L10 6h4l-3.5 2.5 1.5 4.5L7.5 10l-4.5 3L4.5 8.5 1 6h4z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+      Acquisition
+    </div>
   </div>
 
   <div class="sidebar-bottom">
     <button class="btn-crawl" id="crawl-btn" onclick="triggerCrawl()">
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1A5.5 5.5 0 111 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M1 2.5V1h1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Run Crawl
+      Master Sync
     </button>
+    <!-- Sync progress bar (shown only while crawl is running) -->
+    <div class="sync-wrap" id="sync-wrap">
+      <div class="sync-label" id="sync-label">Starting…</div>
+      <div class="sync-track"><div class="sync-fill" id="sync-fill"></div></div>
+    </div>
     <div class="last-sync-text" id="last-sync">Never synced</div>
   </div>
 </aside>
@@ -1248,21 +1386,33 @@
       <div class="kw-add-form" id="kw-add-form">
         <input class="input" id="kw-input" placeholder="e.g. indie pop" style="flex:1" onkeydown="if(event.key==='Enter')addKeyword()" />
         <select class="select" id="kw-market" style="width:110px">
-          <option value="US">US</option>
-          <option value="GB">GB</option>
-          <option value="AU">AU</option>
-          <option value="CA">CA</option>
-          <option value="DE">DE</option>
-          <option value="FR">FR</option>
-          <option value="NL">NL</option>
-          <option value="SE">SE</option>
-          <option value="NO">NO</option>
-          <option value="BR">BR</option>
-          <option value="MX">MX</option>
-          <option value="ES">ES</option>
-          <option value="IT">IT</option>
-          <option value="PL">PL</option>
-          <option value="JP">JP</option>
+          <optgroup label="Tier 1">
+            <option value="US">US</option>
+            <option value="GB">GB</option>
+            <option value="DE">DE</option>
+          </optgroup>
+          <optgroup label="Tier 2">
+            <option value="FR">FR</option>
+            <option value="NL">NL</option>
+            <option value="BR">BR</option>
+          </optgroup>
+          <optgroup label="Tier 3">
+            <option value="TR">TR</option>
+            <option value="ID">ID</option>
+            <option value="PH">PH</option>
+            <option value="VN">VN</option>
+          </optgroup>
+          <optgroup label="Other">
+            <option value="AU">AU</option>
+            <option value="CA">CA</option>
+            <option value="SE">SE</option>
+            <option value="NO">NO</option>
+            <option value="MX">MX</option>
+            <option value="ES">ES</option>
+            <option value="IT">IT</option>
+            <option value="PL">PL</option>
+            <option value="JP">JP</option>
+          </optgroup>
         </select>
         <button class="btn primary" onclick="addKeyword()">Add</button>
       </div>
@@ -1432,8 +1582,8 @@
     <div class="view" data-view="leads" id="view-leads">
       <div class="flex-between section-gap">
         <div>
-          <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Leads</div>
-          <div class="text-muted" style="margin-top:3px">Curator contacts extracted from top-20 search results</div>
+          <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Lead CRM</div>
+          <div class="text-muted" style="margin-top:3px">Sorted by Market Influence — curators owning the most top-10 spots</div>
         </div>
         <button class="btn sm" onclick="exportLeadsCSV()">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v7M3.5 5.5L6 8l2.5-2.5M1.5 9.5v1a.5.5 0 00.5.5h8a.5.5 0 00.5-.5v-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1441,18 +1591,74 @@
         </button>
       </div>
       <div class="panel">
+        <!-- Filter bar -->
+        <div class="filter-bar">
+          <input class="input" id="leads-search" placeholder="Search curator or playlist…" style="width:200px" oninput="renderLeads()" />
+          <select class="select" id="leads-genre-filter" style="width:140px" onchange="renderLeads()">
+            <option value="">All Genres</option>
+          </select>
+          <select class="select" id="leads-market-filter" style="width:100px" onchange="renderLeads()">
+            <option value="">All Markets</option>
+          </select>
+          <span class="filter-count" id="leads-count"></span>
+        </div>
         <div class="panel-body">
           <table class="rankings-table">
             <thead>
               <tr>
                 <th>Playlist</th>
                 <th>Owner</th>
-                <th>Position</th>
-                <th>Keyword</th>
-                <th>Contacts</th>
+                <th class="sortable" onclick="sortLeads('influence_count')" title="Distinct top-10 keyword slots">
+                  Influence <span class="sort-icon active" id="leads-sort-icon">↓</span>
+                </th>
+                <th>Market</th>
+                <th>Genre</th>
+                <th>Direct Actions</th>
               </tr>
             </thead>
             <tbody id="leads-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ACQUISITION ──────────────────────────────────────────── -->
+    <div class="view" data-view="acquisition" id="view-acquisition">
+      <div class="flex-between section-gap">
+        <div>
+          <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Acquisition Scout</div>
+          <div class="text-muted" style="margin-top:3px">Undervalued gems — top-5 ranked playlists with under 5k followers</div>
+        </div>
+      </div>
+      <div class="panel">
+        <!-- Filter bar -->
+        <div class="filter-bar">
+          <input class="input" id="acq-search" placeholder="Search playlist or owner…" style="width:200px" oninput="renderAcquisition()" />
+          <select class="select" id="acq-genre-filter" style="width:140px" onchange="renderAcquisition()">
+            <option value="">All Genres</option>
+          </select>
+          <select class="select" id="acq-market-filter" style="width:100px" onchange="renderAcquisition()">
+            <option value="">All Markets</option>
+          </select>
+          <span class="filter-count" id="acq-count"></span>
+        </div>
+        <div class="panel-body">
+          <table class="rankings-table">
+            <thead>
+              <tr>
+                <th>Playlist</th>
+                <th>Owner</th>
+                <th class="sortable" onclick="sortAcquisition('position')" title="Current search rank">Rank</th>
+                <th class="sortable" onclick="sortAcquisition('followers')" title="Follower count">Followers</th>
+                <th>Genre</th>
+                <th>Market</th>
+                <th class="sortable" onclick="sortAcquisition('opportunity_score')" title="(6−rank)×15 + (5000−followers)/100">
+                  Opp. Score <span class="sort-icon active" id="acq-sort-icon">↓</span>
+                </th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="acq-tbody"></tbody>
           </table>
         </div>
       </div>
@@ -1541,6 +1747,10 @@ const S = {
   chart: null,
   marketShareChart: null,
   leads: [],
+  acquisition: [],
+  leadsSort: { key: 'influence_count', dir: -1 },
+  acqSort:   { key: 'opportunity_score', dir: -1 },
+  syncPollTimer: null,
   notionConnected: localStorage.getItem('notion_connected') === 'true',
   dashAlerts: [],
 };
@@ -1625,7 +1835,7 @@ function navigate(view) {
   const titles = {
     dashboard:'Dashboard', rankings:'Rankings', opportunities:'Opportunities',
     alerts:'Alerts', playlists:'Playlists', keywords:'Keywords', settings:'Settings',
-    trends:'Trends', 'market-map':'Market Map', leads:'Leads',
+    trends:'Trends', 'market-map':'Market Map', leads:'Lead CRM', acquisition:'Acquisition Scout',
   };
   el('page-title').textContent = titles[view] || view;
   if (view === 'dashboard')     renderDashboard();
@@ -1638,6 +1848,7 @@ function navigate(view) {
   if (view === 'trends')        loadTrends();
   if (view === 'market-map')    loadMarketMap();
   if (view === 'leads')         loadLeads();
+  if (view === 'acquisition')   loadAcquisition();
 }
 
 // ── Init ─────────────────────────────────────────────────────────
@@ -2227,28 +2438,65 @@ async function notionSync() {
   }
 }
 
-// ── Crawl ─────────────────────────────────────────────────────────
+// ── Crawl + sync polling ──────────────────────────────────────────
 async function triggerCrawl() {
   const btn = el('crawl-btn');
   btn.disabled = true;
-  btn.innerHTML = '<div class="spinner"></div>Running…';
+  btn.innerHTML = '<div class="spinner"></div>Syncing…';
   try {
     await api('/api/crawl/now', { method: 'POST' });
-    showToast('Crawl started — rankings will update shortly');
+    showToast('Master Sync started — tracking progress below');
+    startSyncPolling();
   } catch(e) {
     showToast('Failed to trigger crawl', 'error');
-  }
-
-  // re-fetch after 20s
-  setTimeout(async () => {
     btn.disabled = false;
-    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1A5.5 5.5 0 111 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M1 2.5V1h1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Run Crawl`;
-    await loadAll();
-    if (S.view === 'dashboard') renderDashboard();
-    if (S.view === 'rankings')  renderRankings();
-    updateLastSync();
-    showToast('Rankings updated');
-  }, 20000);
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1A5.5 5.5 0 111 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M1 2.5V1h1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Master Sync`;
+  }
+}
+
+function startSyncPolling() {
+  if (S.syncPollTimer) return;
+  el('sync-wrap').classList.add('visible');
+  S.syncPollTimer = setInterval(async () => {
+    try {
+      const status = await api('/api/sync-status');
+      updateSyncProgress(status);
+      if (!status.running) stopSyncPolling(true);
+    } catch(e) { /* ignore transient errors */ }
+  }, 2000);
+}
+
+function stopSyncPolling(finished = false) {
+  clearInterval(S.syncPollTimer);
+  S.syncPollTimer = null;
+  const btn = el('crawl-btn');
+  btn.disabled = false;
+  btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1A5.5 5.5 0 111 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M1 2.5V1h1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Master Sync`;
+  if (finished) {
+    el('sync-label').textContent = '✓ Done';
+    el('sync-fill').style.width = '100%';
+    setTimeout(() => {
+      el('sync-wrap').classList.remove('visible');
+      el('sync-fill').style.width = '0%';
+    }, 3000);
+    loadAll().then(() => {
+      if (S.view === 'dashboard')   renderDashboard();
+      if (S.view === 'rankings')    renderRankings();
+      if (S.view === 'leads')       loadLeads();
+      if (S.view === 'acquisition') loadAcquisition();
+      updateLastSync();
+      showToast('Master Sync complete — data updated');
+    });
+  }
+}
+
+function updateSyncProgress(status) {
+  const pct   = status.pct || 0;
+  const label = status.total > 0
+    ? `${status.progress}/${status.total} · ${status.current}`
+    : status.current || 'Running…';
+  el('sync-label').textContent = label;
+  el('sync-fill').style.width  = pct + '%';
 }
 
 // ── Volatility / Ease helpers ─────────────────────────────────────
@@ -2364,57 +2612,114 @@ async function loadMarketMap() {
   }
 }
 
-// ── Leads ─────────────────────────────────────────────────────────
+// ── Leads CRM ────────────────────────────────────────────────────
 async function loadLeads() {
   const tbody = el('leads-tbody');
-  tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--ink3)">Loading…</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--ink3)">Loading…</td></tr>`;
   try {
     S.leads = await api('/api/leads');
-    if (!S.leads.length) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--ink3)">No leads yet — run a crawl to extract curator contacts from top-20 results.</td></tr>`;
-      return;
-    }
-    tbody.innerHTML = S.leads.map(l => {
-      const ci    = l.contact_info || {};
-      const chips = [];
-      (ci.emails     || []).forEach(e => chips.push(`<a href="mailto:${esc(e)}" class="lead-contact email">✉ ${esc(e)}</a>`));
-      (ci.instagrams || []).forEach(i => chips.push(`<a href="https://instagram.com/${esc(i.replace('@',''))}" target="_blank" rel="noopener" class="lead-contact ig">◉ ${esc(i)}</a>`));
-      (ci.linktrees  || []).forEach(t => chips.push(`<a href="https://${esc(t)}" target="_blank" rel="noopener" class="lead-contact tree">🌿 ${esc(t)}</a>`));
-      (ci.discords   || []).forEach(d => chips.push(`<span class="lead-contact discord">💬 ${esc(d)}</span>`));
-      (ci.submithubs || []).forEach(s => chips.push(`<a href="https://${esc(s)}" target="_blank" rel="noopener" class="lead-contact sub">⬆ ${esc(s)}</a>`));
-      return `
-        <tr>
-          <td>
-            <div class="td-name" style="max-width:160px">${esc(l.playlist_name || '—')}</div>
-            ${l.followers ? `<div class="td-label">${fmtNum(l.followers)} followers</div>` : ''}
-          </td>
-          <td><strong style="font-weight:500">${esc(l.owner || '—')}</strong></td>
-          <td>${posBadge(l.position)}</td>
-          <td>
-            <strong style="font-weight:500">${esc(l.term)}</strong>
-            <span class="badge-mkt" style="margin-left:4px">${esc(l.market)}</span>
-          </td>
-          <td><div class="lead-contacts">${chips.join('') || '<span class="text-muted">—</span>'}</div></td>
-        </tr>
-      `;
-    }).join('');
+    // Populate filter dropdowns
+    const genres  = [...new Set(S.leads.map(l => l.genre).filter(Boolean))].sort();
+    const markets = [...new Set(S.leads.map(l => l.market).filter(Boolean))].sort();
+    el('leads-genre-filter').innerHTML  = '<option value="">All Genres</option>'  + genres.map(g  => `<option value="${esc(g)}">${esc(g)}</option>`).join('');
+    el('leads-market-filter').innerHTML = '<option value="">All Markets</option>' + markets.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('');
+    renderLeads();
   } catch (e) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--red)">Failed to load leads.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--red)">Failed to load leads.</td></tr>`;
   }
+}
+
+function sortLeads(key) {
+  if (S.leadsSort.key === key) {
+    S.leadsSort.dir *= -1;
+  } else {
+    S.leadsSort = { key, dir: -1 };
+  }
+  el('leads-sort-icon').textContent = S.leadsSort.dir === -1 ? '↓' : '↑';
+  renderLeads();
+}
+
+function renderLeads() {
+  const tbody   = el('leads-tbody');
+  const q       = (el('leads-search')?.value || '').toLowerCase();
+  const genre   = el('leads-genre-filter')?.value  || '';
+  const market  = el('leads-market-filter')?.value || '';
+
+  let rows = [...(S.leads || [])];
+  if (q)      rows = rows.filter(l => (l.owner || '').toLowerCase().includes(q) || (l.playlist_name || '').toLowerCase().includes(q));
+  if (genre)  rows = rows.filter(l => l.genre  === genre);
+  if (market) rows = rows.filter(l => l.market === market);
+
+  const { key, dir } = S.leadsSort;
+  rows.sort((a, b) => (Number(a[key] ?? 0) - Number(b[key] ?? 0)) * dir);
+
+  el('leads-count').textContent = `${rows.length} lead${rows.length !== 1 ? 's' : ''}`;
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--ink3)">${S.leads.length ? 'No results match the filter.' : 'No leads yet — run a Master Sync to extract curator contacts.'}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(l => {
+    const ci      = l.contact_info || {};
+    const emails  = ci.emails     || [];
+    const igs     = ci.instagrams || [];
+    const trees   = ci.linktrees  || [];
+    const subs    = ci.submithubs || [];
+    const inf     = Number(l.influence_count) || 0;
+
+    const btns = [];
+    // Mailto button
+    if (emails.length) {
+      const addr = emails[0];
+      btns.push(`<a class="action-btn email" href="mailto:${esc(addr)}" title="${esc(addr)}">✉ Email</a>`);
+      btns.push(`<button class="action-btn copy" onclick="copyText('${esc(addr)}','Email copied')" title="Copy email">⎘</button>`);
+    }
+    // Instagram DM link
+    if (igs.length) {
+      const handle = igs[0].replace('@','');
+      btns.push(`<a class="action-btn ig" href="https://instagram.com/${esc(handle)}" target="_blank" rel="noopener" title="Open Instagram">◉ IG</a>`);
+      btns.push(`<a class="action-btn ig" href="https://ig.me/m/${esc(handle)}" target="_blank" rel="noopener" title="Send DM">✉ DM</a>`);
+    }
+    if (trees.length) btns.push(`<a class="action-btn tree" href="https://${esc(trees[0])}" target="_blank" rel="noopener">🌿 Linktree</a>`);
+    if (subs.length)  btns.push(`<a class="action-btn sub"  href="https://${esc(subs[0])}"  target="_blank" rel="noopener">⬆ SubmitHub</a>`);
+
+    const infBadge = inf >= 5
+      ? `<span class="priority-badge high">${inf} slots</span>`
+      : inf >= 2
+        ? `<span class="priority-badge med">${inf} slots</span>`
+        : `<span class="text-muted" style="font-size:12px">${inf}</span>`;
+
+    return `
+      <tr>
+        <td>
+          <div class="td-name" style="max-width:160px">${esc(l.playlist_name || '—')}</div>
+          ${l.followers ? `<div class="td-label">${fmtNum(l.followers)} followers</div>` : ''}
+        </td>
+        <td><strong style="font-weight:500">${esc(l.owner || '—')}</strong></td>
+        <td>${infBadge}</td>
+        <td><span class="badge-mkt">${esc(l.market)}</span></td>
+        <td><span class="text-muted" style="font-size:12px;font-style:italic">${esc(l.genre || '—')}</span></td>
+        <td><div class="action-btns">${btns.join('') || '<span class="text-muted">—</span>'}</div></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function copyText(text, msg) {
+  navigator.clipboard.writeText(text).then(() => showToast(msg || 'Copied'));
 }
 
 function exportLeadsCSV() {
   if (!S.leads || !S.leads.length) { showToast('No leads to export', 'error'); return; }
-  const headers = ['Playlist','Owner','Position','Keyword','Market','Emails','Instagram','Linktree','Discord','SubmitHub'];
+  const headers = ['Playlist','Owner','Influence','Market','Genre','Emails','Instagram','Linktree','SubmitHub'];
   const lines = S.leads.map(l => {
     const ci = l.contact_info || {};
     return [
-      l.playlist_name || '', l.owner || '', l.position || '',
-      l.term, l.market,
+      l.playlist_name || '', l.owner || '', l.influence_count || 0, l.market, l.genre || '',
       (ci.emails     || []).join(' | '),
       (ci.instagrams || []).join(' | '),
       (ci.linktrees  || []).join(' | '),
-      (ci.discords   || []).join(' | '),
       (ci.submithubs || []).join(' | '),
     ];
   });
@@ -2426,6 +2731,97 @@ function exportLeadsCSV() {
   a.download = `rankify-leads-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   showToast(`Exported ${S.leads.length} leads`);
+}
+
+// ── Acquisition Scout ────────────────────────────────────────────
+async function loadAcquisition() {
+  const tbody = el('acq-tbody');
+  tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--ink3)">Loading…</td></tr>`;
+  try {
+    S.acquisition = await api('/api/acquisition');
+    const genres  = [...new Set(S.acquisition.map(a => a.genre).filter(Boolean))].sort();
+    const markets = [...new Set(S.acquisition.map(a => a.market).filter(Boolean))].sort();
+    el('acq-genre-filter').innerHTML  = '<option value="">All Genres</option>'  + genres.map(g  => `<option value="${esc(g)}">${esc(g)}</option>`).join('');
+    el('acq-market-filter').innerHTML = '<option value="">All Markets</option>' + markets.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('');
+    renderAcquisition();
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--red)">Failed to load acquisition data.</td></tr>`;
+  }
+}
+
+function sortAcquisition(key) {
+  if (S.acqSort.key === key) {
+    S.acqSort.dir *= -1;
+  } else {
+    // opportunity_score sorts desc by default; position/followers sort asc by default
+    S.acqSort = { key, dir: key === 'opportunity_score' ? -1 : 1 };
+  }
+  el('acq-sort-icon').textContent = S.acqSort.dir === -1 ? '↓' : '↑';
+  renderAcquisition();
+}
+
+function renderAcquisition() {
+  const tbody  = el('acq-tbody');
+  const q      = (el('acq-search')?.value || '').toLowerCase();
+  const genre  = el('acq-genre-filter')?.value  || '';
+  const market = el('acq-market-filter')?.value || '';
+
+  let rows = [...(S.acquisition || [])];
+  if (q)      rows = rows.filter(r => (r.playlist_name || '').toLowerCase().includes(q) || (r.owner || '').toLowerCase().includes(q));
+  if (genre)  rows = rows.filter(r => r.genre  === genre);
+  if (market) rows = rows.filter(r => r.market === market);
+
+  const { key, dir } = S.acqSort;
+  rows.sort((a, b) => (Number(a[key] ?? 0) - Number(b[key] ?? 0)) * dir);
+
+  el('acq-count').textContent = `${rows.length} gem${rows.length !== 1 ? 's' : ''}`;
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--ink3)">${S.acquisition.length ? 'No results match the filter.' : 'No undervalued gems yet — run a Master Sync first.'}</td></tr>`;
+    return;
+  }
+
+  const maxScore = Math.max(...rows.map(r => Number(r.opportunity_score)), 1);
+
+  tbody.innerHTML = rows.map(r => {
+    const score   = Number(r.opportunity_score) || 0;
+    const scorePct = Math.round((score / maxScore) * 100);
+    const priority = score >= 60 ? 'high' : score >= 30 ? 'med' : 'low';
+    const label    = score >= 60 ? 'High Priority' : score >= 30 ? 'Watchlist' : 'Low';
+
+    const ci   = r.contact_info || {};
+    const btns = [];
+    if ((ci.emails     || []).length) btns.push(`<a class="action-btn email" href="mailto:${esc(ci.emails[0])}" title="${esc(ci.emails[0])}">✉ Email</a>`);
+    if ((ci.instagrams || []).length) {
+      const h = ci.instagrams[0].replace('@','');
+      btns.push(`<a class="action-btn ig" href="https://ig.me/m/${esc(h)}" target="_blank" rel="noopener">✉ DM</a>`);
+    }
+    if ((ci.linktrees  || []).length) btns.push(`<a class="action-btn tree" href="https://${esc(ci.linktrees[0])}" target="_blank" rel="noopener">🌿</a>`);
+    const hasContact = btns.length > 0;
+    btns.push(`<a class="action-btn copy" href="https://open.spotify.com/playlist/${esc(r.spotify_id)}" target="_blank" rel="noopener" title="Open in Spotify">▶ Spotify</a>`);
+
+    return `
+      <tr>
+        <td>
+          <div class="td-name" style="max-width:150px">${esc(r.playlist_name || '—')}</div>
+          ${hasContact ? '<div class="td-label" style="color:var(--green)">● Has contact</div>' : ''}
+        </td>
+        <td style="font-size:12.5px">${esc(r.owner || '—')}</td>
+        <td>${posBadge(r.position)}</td>
+        <td class="text-muted">${fmtNum(r.followers)}</td>
+        <td><span class="text-muted" style="font-size:12px;font-style:italic">${esc(r.genre || '—')}</span></td>
+        <td><span class="badge-mkt">${esc(r.market)}</span></td>
+        <td>
+          <div class="opp-score-bar">
+            <span class="opp-score-num">${score}</span>
+            <div class="opp-score-track"><div class="opp-score-fill" style="width:${scorePct}%;background:${priority==='high'?'var(--green)':priority==='med'?'var(--amber)':'var(--ink3)'}"></div></div>
+            <span class="priority-badge ${priority}">${label}</span>
+          </div>
+        </td>
+        <td><div class="action-btns">${btns.join('')}</div></td>
+      </tr>
+    `;
+  }).join('');
 }
 
 // ── Seasonal suggestions ──────────────────────────────────────────
