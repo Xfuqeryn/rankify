@@ -1216,6 +1216,342 @@
     a.ext-link { color: var(--ink3); text-decoration: none; font-size: 12px; transition: color 0.12s; }
     a.ext-link:hover { color: var(--ink); }
     .text-muted { color: var(--ink3); font-size: 12.5px; }
+
+    /* ── GPU compositing for smooth animations ────────────────── */
+    .sidebar, .topbar, .modal-box { will-change: transform; transform: translateZ(0); }
+
+    /* ── Bottom navigation bar (mobile only) ──────────────────── */
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 58px;
+      background: var(--surface);
+      border-top: 0.5px solid var(--border2);
+      z-index: 300;
+      padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      will-change: transform;
+      transform: translateZ(0);
+    }
+    .bottom-nav-inner {
+      display: flex;
+      align-items: stretch;
+      height: 58px;
+    }
+    .bottom-nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: var(--ink3);
+      font-size: 10px;
+      font-weight: 500;
+      font-family: var(--ff-ui);
+      transition: color 0.12s;
+      -webkit-tap-highlight-color: transparent;
+      padding: 6px 0;
+      position: relative;
+    }
+    .bottom-nav-item.active { color: var(--ink); }
+    .bottom-nav-item.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 25%; right: 25%;
+      height: 2px;
+      background: var(--ink);
+      border-radius: 2px 2px 0 0;
+    }
+    .bottom-nav-item svg { flex-shrink: 0; }
+    .bottom-nav-sync {
+      width: 40px; height: 40px;
+      background: var(--ink);
+      border: none;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--surface);
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s;
+      flex-shrink: 0;
+      align-self: center;
+      margin: 0 8px;
+    }
+    .bottom-nav-sync:disabled { opacity: 0.45; }
+
+    /* ── Mobile topbar sync button ────────────────────────────── */
+    .mobile-sync-btn {
+      display: none;
+      width: 32px; height: 32px;
+      align-items: center; justify-content: center;
+      background: var(--surface2);
+      border: 0.5px solid var(--border2);
+      border-radius: 50%;
+      cursor: pointer;
+      color: var(--ink2);
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s;
+      flex-shrink: 0;
+    }
+    .mobile-sync-btn:disabled { opacity: 0.45; }
+
+    /* ── Filter drawer (mobile slide-up) ──────────────────────── */
+    .filter-drawer-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 400;
+      display: none;
+      animation: fadeIn 0.2s ease;
+    }
+    .filter-drawer-overlay.open { display: block; }
+    .filter-drawer {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      z-index: 401;
+      padding: 0 20px calc(20px + env(safe-area-inset-bottom));
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+      will-change: transform;
+      max-height: 82vh;
+      overflow-y: auto;
+    }
+    .filter-drawer.open { transform: translateY(0); }
+    .filter-drawer-handle {
+      width: 36px; height: 4px;
+      background: var(--surface3);
+      border-radius: 2px;
+      margin: 14px auto 20px;
+    }
+    .filter-drawer-title { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 18px; }
+    .filter-drawer-field { margin-bottom: 14px; }
+    .filter-drawer-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--ink3); margin-bottom: 6px; display: block;
+    }
+    .filter-drawer-actions { display: flex; gap: 8px; margin-top: 22px; }
+
+    /* ── Risk badge ───────────────────────────────────────────── */
+    .risk-badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.03em;
+      padding: 2px 6px; border-radius: 4px;
+      border: none; font-family: var(--ff-ui);
+      cursor: pointer; transition: opacity 0.12s;
+    }
+    .risk-badge:hover { opacity: 0.75; }
+    .risk-badge.clean { background: var(--green-bg); color: var(--green); cursor: default; }
+    .risk-badge.med   { background: var(--amber-bg); color: var(--amber); }
+    .risk-badge.high  { background: var(--red-bg);   color: var(--red); }
+
+    /* ── Suspicion mini-tags ──────────────────────────────────── */
+    .suspicion-tag {
+      display: inline-flex; align-items: center; gap: 2px;
+      font-size: 9px; font-weight: 600; letter-spacing: 0.03em;
+      padding: 1px 5px; border-radius: 3px;
+      background: var(--red-bg); color: var(--red);
+    }
+
+    /* ── Hot asset glow ───────────────────────────────────────── */
+    .hot-asset td:first-child {
+      box-shadow: inset 3px 0 0 var(--green);
+    }
+    .hot-asset-label {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 9px; font-weight: 700; letter-spacing: 0.04em;
+      padding: 1px 5px; border-radius: 3px;
+      background: var(--green-bg); color: var(--green);
+      animation: hotPulse 2.5s ease-in-out infinite;
+    }
+    @keyframes hotPulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+    /* ── Favorite button ──────────────────────────────────────── */
+    .fav-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 15px; padding: 2px 4px; line-height: 1;
+      color: var(--ink3);
+      transition: transform 0.15s, color 0.12s;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+    }
+    .fav-btn:hover { transform: scale(1.25); }
+    .fav-btn.starred { color: #f59e0b; }
+
+    /* ── Market price tag ─────────────────────────────────────── */
+    .price-tag {
+      display: inline-flex; align-items: center;
+      font-size: 11.5px; font-weight: 600;
+      color: var(--green); letter-spacing: -0.2px;
+    }
+    .price-tag.arb {
+      color: var(--green);
+      animation: hotPulse 2.5s ease-in-out infinite;
+    }
+
+    /* ── Sonic profile badge ──────────────────────────────────── */
+    .sonic-badge {
+      display: inline-flex; align-items: center; gap: 2px;
+      font-size: 9.5px; font-weight: 600; letter-spacing: 0.02em;
+      padding: 1px 6px; border-radius: 4px;
+    }
+    .sonic-badge.energy { background: var(--red-bg);   color: var(--red); }
+    .sonic-badge.chill  { background: var(--blue-bg);  color: var(--blue); }
+    .sonic-badge.sleep  { background: var(--green-bg); color: var(--green); }
+    .sonic-badge.groove { background: var(--amber-bg); color: var(--amber); }
+    .sonic-badge.mixed  { background: var(--surface3); color: var(--ink3); }
+
+    /* ── Risk modal reasons ───────────────────────────────────── */
+    .risk-reason {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 11px 0; border-bottom: 0.5px solid var(--border);
+    }
+    .risk-reason:last-child { border-bottom: none; padding-bottom: 0; }
+    .risk-reason-icon { font-size: 20px; flex-shrink: 0; line-height: 1; margin-top: 1px; }
+    .risk-reason-label { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+    .risk-reason-text { font-size: 12.5px; color: var(--ink2); line-height: 1.45; }
+
+    /* ── Mobile filter toggle btn ─────────────────────────────── */
+    .mobile-filter-btn {
+      display: none;
+      align-items: center; gap: 5px;
+      padding: 5px 11px; border-radius: var(--r);
+      border: 0.5px solid var(--border2);
+      background: var(--surface2); color: var(--ink2);
+      font-size: 12px; font-weight: 500; font-family: var(--ff-ui);
+      cursor: pointer; margin-left: auto;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mobile-filter-btn.has-filters {
+      border-color: var(--blue); color: var(--blue);
+      background: var(--blue-bg);
+    }
+
+    /* ── Hide-on-mobile utility ───────────────────────────────── */
+    .hide-mobile { }
+
+    /* ── Favorites section in filter bar ─────────────────────── */
+    .fav-only-toggle {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 10px; border-radius: var(--rpill);
+      border: 0.5px solid var(--border2);
+      background: var(--surface2); color: var(--ink2);
+      font-size: 12px; font-weight: 500; font-family: var(--ff-ui);
+      cursor: pointer; white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.12s;
+    }
+    .fav-only-toggle.active {
+      background: rgba(245,158,11,0.12); color: #f59e0b;
+      border-color: rgba(245,158,11,0.3);
+    }
+
+    /* ── Acquisition card layout (mobile) ─────────────────────── */
+    #acq-cards { display: none; }
+
+    /* ── Responsive: ≤ 767px ──────────────────────────────────── */
+    @media (max-width: 767px) {
+      /* Layout */
+      body { display: block; overflow: hidden; }
+      .sidebar { display: none; }
+      .main { height: 100dvh; height: 100vh; }
+      .content {
+        padding: 14px 14px calc(70px + env(safe-area-inset-bottom));
+        overflow-y: auto;
+      }
+
+      /* Topbar */
+      .topbar { padding: 0 14px; gap: 8px; }
+      .notion-pill { display: none; }
+      .mobile-sync-btn { display: flex; }
+
+      /* Bottom nav */
+      .bottom-nav { display: block; }
+
+      /* Toast: above bottom nav */
+      .toast-container { bottom: 72px; right: 14px; }
+
+      /* Metrics: 2 cols */
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 14px; }
+      .metric-card { padding: 13px 14px; }
+      .metric-value { font-size: 24px; }
+
+      /* Stacked layouts */
+      .two-col { grid-template-columns: 1fr; }
+      .dash-bottom { grid-template-columns: 1fr; }
+
+      /* Filter bar: horizontal scroll */
+      .filter-bar { overflow-x: auto; flex-wrap: nowrap; gap: 6px; padding: 8px 14px; -webkit-overflow-scrolling: touch; }
+      .filter-bar .input  { min-width: 140px; flex-shrink: 0; }
+      .filter-bar .select { min-width: 110px; flex-shrink: 0; }
+      .filter-count { display: none; }
+
+      /* Show mobile filter button */
+      .mobile-filter-btn { display: flex; }
+
+      /* Tables: horizontal scroll on panel-body */
+      .panel-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .rankings-table { min-width: 500px; }
+
+      /* Acquisition: card layout on mobile */
+      #acq-tbody tr { display: none !important; }
+      #acq-cards { display: block; }
+
+      /* Hide non-critical table cols */
+      .hide-mobile { display: none !important; }
+
+      /* Page title */
+      .page-title { font-size: 16px; }
+
+      /* Genre tags: larger tap targets */
+      .genre-tag { padding: 8px 12px 8px 16px; font-size: 14px; min-height: 40px; }
+      .genre-remove { width: 22px; height: 22px; font-size: 13px; }
+
+      /* Keywords add form */
+      .kw-add-form { flex-wrap: wrap; }
+      .kw-add-form .select { width: 100% !important; }
+
+      /* Modal: bottom sheet */
+      .modal-overlay { align-items: flex-end; padding: 0; }
+      .modal-box {
+        width: 100%; max-width: 100%;
+        border-radius: 20px 20px 0 0;
+        padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+        animation: slideUpModal 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+      }
+      @keyframes slideUpModal { from { transform: translateY(100%); } }
+
+      /* Action buttons: bigger tap targets */
+      .action-btn { padding: 5px 10px; min-height: 32px; font-size: 11.5px; }
+
+      /* CRM select: native-friendly size */
+      .crm-select { padding: 6px 10px; font-size: 13px; }
+
+      /* Playlists: wrap actions */
+      .pl-actions { flex-wrap: wrap; gap: 6px; }
+
+      /* Opp cards */
+      .opp-card { padding: 12px 14px; }
+
+      /* Scout cards */
+      .scout-card { padding: 10px 14px; flex-wrap: wrap; gap: 8px; }
+
+      /* Two-col market pill + sync row in topbar */
+      .market-pill { font-size: 11.5px; padding: 4px 22px 4px 9px; }
+    }
+
+    @media (max-width: 480px) {
+      .content { padding: 10px 10px calc(68px + env(safe-area-inset-bottom)); }
+      .metrics-grid { gap: 6px; }
+      .metric-card { padding: 11px 12px; }
+      .metric-value { font-size: 22px; }
+    }
   </style>
 </head>
 <body>
@@ -1322,6 +1658,10 @@
       <span class="notion-dot"></span>
       <span id="notion-pill-text">Connect Notion</span>
     </div>
+    <!-- Mobile-only quick sync button -->
+    <button class="mobile-sync-btn" id="mobile-sync-btn" onclick="triggerCrawl()" title="Master Sync">
+      <svg width="15" height="15" viewBox="0 0 13 13" fill="none"><path d="M6.5 1A5.5 5.5 0 111 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M1 2.5V1h1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
   </header>
 
   <!-- Content -->
@@ -1695,8 +2035,9 @@
       </div>
       <div class="panel">
         <!-- Filter bar -->
-        <div class="filter-bar">
+        <div class="filter-bar" id="leads-filter-bar">
           <input class="input" id="leads-search" placeholder="Search curator or playlist…" style="width:200px" oninput="renderLeads()" />
+          <button class="fav-only-toggle" id="leads-fav-toggle" onclick="toggleLeadsFavOnly()">☆ Starred</button>
           <select class="select" id="leads-genre-filter" style="width:140px" onchange="renderLeads()">
             <option value="">All Genres</option>
           </select>
@@ -1704,6 +2045,10 @@
             <option value="">All Markets</option>
           </select>
           <span class="filter-count" id="leads-count"></span>
+          <button class="mobile-filter-btn" id="leads-mobile-filter-btn" onclick="openFilterDrawer('leads')">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 3.5h10M3.5 6.5h6M5.5 9.5h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            Filters
+          </button>
         </div>
         <div class="panel-body">
           <table class="rankings-table">
@@ -1736,8 +2081,9 @@
       </div>
       <div class="panel">
         <!-- Filter bar -->
-        <div class="filter-bar">
+        <div class="filter-bar" id="acq-filter-bar">
           <input class="input" id="acq-search" placeholder="Search playlist or owner…" style="width:180px" oninput="renderAcquisition()" />
+          <button class="fav-only-toggle" id="acq-fav-toggle" onclick="toggleAcqFavOnly()">☆ Starred</button>
           <select class="select" id="acq-genre-filter" style="width:130px" onchange="renderAcquisition()">
             <option value="">All Genres</option>
           </select>
@@ -1759,25 +2105,31 @@
             <option value="Acquired">Acquired</option>
           </select>
           <span class="filter-count" id="acq-count"></span>
+          <button class="mobile-filter-btn" id="acq-mobile-filter-btn" onclick="openFilterDrawer('acquisition')">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 3.5h10M3.5 6.5h6M5.5 9.5h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            Filters
+          </button>
         </div>
-        <div class="panel-body">
+        <div class="panel-body" style="overflow:visible">
           <table class="rankings-table">
             <thead>
               <tr>
                 <th>Playlist</th>
                 <th>Owner / Tier</th>
                 <th class="sortable" onclick="sortAcquisition('position')">Rank</th>
-                <th class="sortable" onclick="sortAcquisition('followers')">Followers</th>
-                <th class="sortable" onclick="sortAcquisition('yield_score')">Yield</th>
-                <th>Genre</th>
+                <th class="sortable hide-mobile" onclick="sortAcquisition('followers')">Followers</th>
+                <th class="sortable hide-mobile" onclick="sortAcquisition('yield_score')">Yield</th>
+                <th class="hide-mobile">Genre / Sonic</th>
                 <th class="sortable" onclick="sortAcquisition('opportunity_score')">
                   Score <span class="sort-icon active" id="acq-sort-icon">↓</span>
                 </th>
-                <th>Status / Actions</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="acq-tbody"></tbody>
           </table>
+          <!-- Mobile card view (shown on ≤767px) -->
+          <div id="acq-cards"></div>
         </div>
       </div>
     </div>
@@ -1881,6 +2233,61 @@
 
 <!-- Toast container -->
 <div class="toast-container" id="toasts"></div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     BOTTOM NAVIGATION (mobile only)
+─────────────────────────────────────────────────────────────── -->
+<nav class="bottom-nav" id="bottom-nav" aria-label="Main navigation">
+  <div class="bottom-nav-inner">
+    <button class="bottom-nav-item active" data-view="dashboard" onclick="navigate('dashboard')" aria-label="Home">
+      <svg width="20" height="20" viewBox="0 0 15 15" fill="none"><rect x="1" y="1" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="8.5" y="1" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="1" y="8.5" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="8.5" y="8.5" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
+      Home
+    </button>
+    <button class="bottom-nav-item" data-view="acquisition" onclick="navigate('acquisition')" aria-label="Acquisition Scout">
+      <svg width="20" height="20" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5L10 6h4l-3.5 2.5 1.5 4.5L7.5 10l-4.5 3L4.5 8.5 1 6h4z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+      Scout
+    </button>
+    <button class="bottom-nav-sync" id="bottom-sync-btn" onclick="triggerCrawl()" aria-label="Master Sync">
+      <svg width="16" height="16" viewBox="0 0 13 13" fill="none"><path d="M6.5 1A5.5 5.5 0 111 6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M1 2.5V1h1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="bottom-nav-item" data-view="leads" onclick="navigate('leads')" aria-label="Lead CRM">
+      <svg width="20" height="20" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 13c0-3 2.5-4.5 5.5-4.5S13 10 13 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M10.5 7l1 1 2-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Leads
+    </button>
+    <button class="bottom-nav-item" data-view="genres" onclick="navigate('genres')" aria-label="Target Genres">
+      <svg width="20" height="20" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 4v3.5l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Genres
+    </button>
+  </div>
+</nav>
+
+<!-- ──────────────────────────────────────────────────────────────
+     FILTER DRAWER (mobile slide-up)
+─────────────────────────────────────────────────────────────── -->
+<div class="filter-drawer-overlay" id="filter-drawer-overlay" onclick="closeFilterDrawer()"></div>
+<div class="filter-drawer" id="filter-drawer" role="dialog" aria-modal="true">
+  <div class="filter-drawer-handle"></div>
+  <div class="filter-drawer-title" id="filter-drawer-title">Filters</div>
+  <div id="filter-drawer-body"></div>
+  <div class="filter-drawer-actions">
+    <button class="btn" style="flex:1" onclick="clearActiveFilters()">Clear All</button>
+    <button class="btn primary" style="flex:1" onclick="closeFilterDrawer()">Done</button>
+  </div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     RISK MODAL
+─────────────────────────────────────────────────────────────── -->
+<div class="modal-overlay hidden" id="modal-risk" onclick="overlayClose(event,'modal-risk')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title">⚠️ Risk Assessment</div>
+    <div class="modal-sub" id="risk-modal-name" style="word-break:break-word"></div>
+    <div id="risk-modal-reasons" style="margin-top:14px"></div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn primary" onclick="closeModal('modal-risk')">Got It</button>
+    </div>
+  </div>
+</div>
 
 <!-- ──────────────────────────────────────────────────────────────
      JAVASCRIPT
@@ -2012,7 +2419,11 @@ function overlayClose(e, id) {
 // ── Navigation ───────────────────────────────────────────────────
 function navigate(view) {
   S.view = view;
+  // Sidebar nav items
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === view));
+  // Bottom nav items
+  document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === view));
+  // View panels
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.dataset.view === view));
   const titles = {
     dashboard:'Dashboard', rankings:'Rankings', opportunities:'Opportunities',
@@ -2021,6 +2432,9 @@ function navigate(view) {
     acquisition:'Acquisition Scout', genres:'Target Genres',
   };
   el('page-title').textContent = titles[view] || view;
+  // Scroll content area to top on navigate
+  const contentEl = document.querySelector('.content');
+  if (contentEl) contentEl.scrollTop = 0;
   if (view === 'dashboard')     renderDashboard();
   if (view === 'rankings')      renderRankings();
   if (view === 'opportunities') loadOpportunities();
@@ -2625,8 +3039,10 @@ async function notionSync() {
 
 // ── Crawl + sync polling ──────────────────────────────────────────
 async function triggerCrawl() {
-  const btn = el('crawl-btn');
-  btn.disabled = true;
+  const btn       = el('crawl-btn');
+  const mobileBtn = el('mobile-sync-btn');
+  const bottomBtn = el('bottom-sync-btn');
+  [btn, mobileBtn, bottomBtn].forEach(b => { if (b) b.disabled = true; });
   btn.innerHTML = '<div class="spinner"></div>Syncing…';
   try {
     await api('/api/crawl/now', { method: 'POST' });
@@ -2634,7 +3050,7 @@ async function triggerCrawl() {
     startSyncPolling();
   } catch(e) {
     showToast('Failed to trigger crawl', 'error');
-    btn.disabled = false;
+    [btn, mobileBtn, bottomBtn].forEach(b => { if (b) b.disabled = false; });
     btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1A5.5 5.5 0 111 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M1 2.5V1h1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Master Sync`;
   }
 }
@@ -2654,9 +3070,12 @@ function startSyncPolling() {
 function stopSyncPolling(finished = false) {
   clearInterval(S.syncPollTimer);
   S.syncPollTimer = null;
-  const btn = el('crawl-btn');
+  const btn       = el('crawl-btn');
+  const mobileBtn = el('mobile-sync-btn');
+  const bottomBtn = el('bottom-sync-btn');
   btn.disabled = false;
   btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1A5.5 5.5 0 111 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M1 2.5V1h1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Master Sync`;
+  [mobileBtn, bottomBtn].forEach(b => { if (b) b.disabled = false; });
   if (finished) {
     el('sync-label').textContent = '✓ Done';
     el('sync-fill').style.width = '100%';
@@ -2831,9 +3250,10 @@ function renderLeads() {
   const market  = el('leads-market-filter')?.value || '';
 
   let rows = [...(S.leads || [])];
-  if (q)      rows = rows.filter(l => (l.owner || '').toLowerCase().includes(q) || (l.playlist_name || '').toLowerCase().includes(q));
-  if (genre)  rows = rows.filter(l => l.genre  === genre);
-  if (market) rows = rows.filter(l => l.market === market);
+  if (q)              rows = rows.filter(l => (l.owner || '').toLowerCase().includes(q) || (l.playlist_name || '').toLowerCase().includes(q));
+  if (genre)          rows = rows.filter(l => l.genre  === genre);
+  if (market)         rows = rows.filter(l => l.market === market);
+  if (S.leadsFavOnly) rows = rows.filter(l => S.favorites.has(l.spotify_id));
 
   const { key, dir } = S.leadsSort;
   rows.sort((a, b) => (Number(a[key] ?? 0) - Number(b[key] ?? 0)) * dir);
@@ -2841,7 +3261,7 @@ function renderLeads() {
   el('leads-count').textContent = `${rows.length} lead${rows.length !== 1 ? 's' : ''}`;
 
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--ink3)">${S.leads.length ? 'No results match the filter.' : 'No leads yet — run a Master Sync to extract curator contacts.'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--ink3)">${S.leads.length ? 'No results match the filter.' : 'No leads yet — run a Master Sync to extract curator contacts.'}</td></tr>`;
     return;
   }
 
@@ -2854,20 +3274,23 @@ function renderLeads() {
     const inf     = Number(l.influence_count) || 0;
 
     const btns = [];
-    // Mailto button
     if (emails.length) {
       const addr = emails[0];
       btns.push(`<a class="action-btn email" href="mailto:${esc(addr)}" title="${esc(addr)}">✉ Email</a>`);
       btns.push(`<button class="action-btn copy" onclick="copyText('${esc(addr)}','Email copied')" title="Copy email">⎘</button>`);
     }
-    // Instagram DM link
     if (igs.length) {
       const handle = igs[0].replace('@','');
-      btns.push(`<a class="action-btn ig" href="https://instagram.com/${esc(handle)}" target="_blank" rel="noopener" title="Open Instagram">◉ IG</a>`);
-      btns.push(`<a class="action-btn ig" href="https://ig.me/m/${esc(handle)}" target="_blank" rel="noopener" title="Send DM">✉ DM</a>`);
+      btns.push(`<a class="action-btn ig" href="https://instagram.com/${esc(handle)}" target="_blank" rel="noopener">◉ IG</a>`);
+      btns.push(`<a class="action-btn ig" href="https://ig.me/m/${esc(handle)}" target="_blank" rel="noopener">✉ DM</a>`);
     }
     if (trees.length) btns.push(`<a class="action-btn tree" href="https://${esc(trees[0])}" target="_blank" rel="noopener">🌿 Linktree</a>`);
-    if (subs.length)  btns.push(`<a class="action-btn sub"  href="https://${esc(subs[0])}"  target="_blank" rel="noopener">⬆ SubmitHub</a>`);
+    if (subs.length)  btns.push(`<a class="action-btn sub"  href="https://${esc(subs[0])}"  target="_blank" rel="noopener">⬆ Submit</a>`);
+    // One-touch pitch
+    if (igs.length) {
+      const h = igs[0].replace('@','');
+      btns.push(`<button class="action-btn copy" onclick="copyPitch('${esc(l.owner)}','${esc(l.genre)}',1,'${esc(l.market)}','${esc(l.playlist_name)}')">📋 Pitch</button>`);
+    }
 
     const infBadge = inf >= 5
       ? `<span class="priority-badge high">${inf} slots</span>`
@@ -2878,13 +3301,21 @@ function renderLeads() {
     return `
       <tr>
         <td>
-          <div class="td-name" style="max-width:150px">${esc(l.playlist_name || '—')}</div>
-          ${l.followers ? `<div class="td-label">${fmtNum(l.followers)} followers</div>` : ''}
+          <div style="display:flex;align-items:flex-start;gap:5px">
+            ${favBtn(l.spotify_id, 'renderLeads')}
+            <div style="min-width:0">
+              <div class="td-name" style="max-width:140px">${esc(l.playlist_name || '—')}</div>
+              ${l.followers ? `<div class="td-label">${fmtNum(l.followers)} followers</div>` : ''}
+            </div>
+          </div>
         </td>
         <td><strong style="font-weight:500">${esc(l.owner || '—')}</strong></td>
         <td>${infBadge}</td>
         <td>${tierBadge(l.market)} <span class="badge-mkt" style="margin-left:3px">${esc(l.market)}</span></td>
-        <td><span class="text-muted" style="font-size:12px;font-style:italic">${esc(l.genre || '—')}</span></td>
+        <td>
+          <div style="font-size:11.5px;font-style:italic;color:var(--ink3);margin-bottom:3px">${esc(l.genre || '—')}</div>
+          ${sonicProfile(l.genre)}
+        </td>
         <td>${crmSelect(l.spotify_id, l.crm_status, 'updateCRMStatus')}</td>
         <td><div class="action-btns">${btns.join('') || '<span class="text-muted">—</span>'}</div></td>
       </tr>
@@ -2948,6 +3379,7 @@ function sortAcquisition(key) {
 
 function renderAcquisition() {
   const tbody        = el('acq-tbody');
+  const cardsEl      = el('acq-cards');
   const q            = (el('acq-search')?.value || '').toLowerCase();
   const genre        = el('acq-genre-filter')?.value     || '';
   const market       = el('acq-market-filter')?.value    || '';
@@ -2955,10 +3387,11 @@ function renderAcquisition() {
   const statusFilter = el('acq-status-filter')?.value    || '';
 
   let rows = [...(S.acquisition || [])];
-  if (q)      rows = rows.filter(r => (r.playlist_name||'').toLowerCase().includes(q) || (r.owner||'').toLowerCase().includes(q));
-  if (genre)  rows = rows.filter(r => r.genre  === genre);
-  if (market) rows = rows.filter(r => r.market === market);
-  if (statusFilter) rows = rows.filter(r => (r.crm_status || 'New') === statusFilter);
+  if (q)             rows = rows.filter(r => (r.playlist_name||'').toLowerCase().includes(q) || (r.owner||'').toLowerCase().includes(q));
+  if (genre)         rows = rows.filter(r => r.genre  === genre);
+  if (market)        rows = rows.filter(r => r.market === market);
+  if (statusFilter)  rows = rows.filter(r => (r.crm_status || 'New') === statusFilter);
+  if (S.acqFavOnly)  rows = rows.filter(r => S.favorites.has(r.spotify_id));
   if (follRange) {
     const [lo, hi] = follRange.split('-').map(Number);
     rows = rows.filter(r => r.followers >= lo && r.followers <= hi);
@@ -2972,13 +3405,25 @@ function renderAcquisition() {
   if (!rows.length) {
     const msg = S.acquisition.length ? 'No results match the filters.' : 'No undervalued gems yet — run a Master Sync first.';
     tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--ink3)">${msg}</td></tr>`;
+    if (cardsEl) cardsEl.innerHTML = `<div class="panel-empty">${msg}</div>`;
     return;
   }
 
   const maxScore = Math.max(...rows.map(r => Number(r.opportunity_score)), 1);
   const maxYield = Math.max(...rows.map(r => Number(r.yield_score)), 1);
 
-  tbody.innerHTML = rows.map(r => {
+  // Precompute risk map & names
+  S.riskNames = S.riskNames || {};
+  rows.forEach(r => {
+    const risks = detectRisk(r);
+    S.riskMap[r.spotify_id]   = risks;
+    S.riskNames[r.spotify_id] = r.playlist_name || r.spotify_id;
+  });
+
+  const tableRows = [];
+  const cardItems = [];
+
+  rows.forEach(r => {
     const score    = Number(r.opportunity_score) || 0;
     const yScore   = Number(r.yield_score)       || 0;
     const scorePct = Math.round((score  / maxScore) * 100);
@@ -2987,11 +3432,15 @@ function renderAcquisition() {
     const label    = score >= 60 ? 'High' : score >= 30 ? 'Watch' : 'Low';
     const crmSt    = r.crm_status || 'New';
 
-    const ci       = r.contact_info || {};
-    const emails   = ci.emails     || [];
-    const igs      = ci.instagrams || [];
-    const trees    = ci.linktrees  || [];
+    const ci         = r.contact_info || {};
+    const emails     = ci.emails     || [];
+    const igs        = ci.instagrams || [];
+    const trees      = ci.linktrees  || [];
     const hasContact = emails.length || igs.length || trees.length;
+
+    const price    = calcMarketPrice(r.followers, r.position, r.market);
+    const isHot    = score >= 60 && hasContact && (r.followers || 0) < 3000;
+    const risks    = S.riskMap[r.spotify_id] || [];
 
     const actBtns = [];
     if (emails.length) {
@@ -3006,34 +3455,48 @@ function renderAcquisition() {
     actBtns.push(`<button class="action-btn copy" onclick="copyPitch('${esc(r.owner)}','${esc(r.genre)}',${r.position},'${esc(r.market)}','${esc(r.playlist_name)}')">📋 Pitch</button>`);
     actBtns.push(`<a class="action-btn copy" href="https://open.spotify.com/playlist/${esc(r.spotify_id)}" target="_blank" rel="noopener">▶</a>`);
 
-    return `
-      <tr>
+    // ── Desktop table row ───────────────────────────────────────
+    tableRows.push(`
+      <tr class="${isHot ? 'hot-asset' : ''}">
         <td>
-          <div class="td-name" style="max-width:140px">${esc(r.playlist_name || '—')}</div>
-          <div style="display:flex;gap:4px;margin-top:2px;flex-wrap:wrap">
-            ${hasContact ? '<span style="font-size:10px;color:var(--green);font-weight:600">● contact</span>' : ''}
-            ${r.is_dormant ? '<span class="dormant-chip">💤 Dormant?</span>' : ''}
+          <div style="display:flex;align-items:flex-start;gap:6px">
+            ${favBtn(r.spotify_id, 'renderAcquisition')}
+            <div style="min-width:0">
+              <div class="td-name" style="max-width:130px">${esc(r.playlist_name || '—')}</div>
+              <div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap;align-items:center">
+                ${isHot ? '<span class="hot-asset-label">🔥 Hot Asset</span>' : ''}
+                ${hasContact ? '<span style="font-size:10px;color:var(--green);font-weight:600">● contact</span>' : ''}
+                ${r.is_dormant ? '<span class="dormant-chip">💤 Dormant</span>' : ''}
+              </div>
+            </div>
           </div>
         </td>
         <td>
           <div style="font-size:12.5px;font-weight:500">${esc(r.owner || '—')}</div>
-          <div style="display:flex;gap:4px;margin-top:2px">${tierBadge(r.market)} <span class="badge-mkt">${esc(r.market)}</span></div>
+          <div style="display:flex;gap:4px;margin-top:2px;align-items:center">${tierBadge(r.market)} <span class="badge-mkt">${esc(r.market)}</span></div>
         </td>
         <td>${posBadge(r.position)}</td>
-        <td class="text-muted" style="font-size:12.5px">${fmtNum(r.followers)}</td>
-        <td>
+        <td class="hide-mobile">
+          <div class="text-muted" style="font-size:12.5px">${fmtNum(r.followers)}</div>
+          <div class="price-tag${isHot ? ' arb' : ''}" style="font-size:11px;margin-top:2px">${fmtPrice(price)}</div>
+        </td>
+        <td class="hide-mobile">
           <div class="yield-bar">
             <span class="yield-num">${yScore}</span>
             <div class="yield-track"><div class="yield-fill" style="width:${yPct}%"></div></div>
           </div>
         </td>
-        <td><span class="text-muted" style="font-size:11.5px;font-style:italic">${esc(r.genre || '—')}</span></td>
+        <td class="hide-mobile">
+          <div style="font-size:11.5px;font-style:italic;color:var(--ink3);margin-bottom:3px">${esc(r.genre || '—')}</div>
+          ${sonicProfile(r.genre)}
+        </td>
         <td>
           <div class="opp-score-bar">
             <span class="opp-score-num">${score}</span>
             <div class="opp-score-track"><div class="opp-score-fill" style="width:${scorePct}%;background:${priority==='high'?'var(--green)':priority==='med'?'var(--amber)':'var(--ink3)'}"></div></div>
             <span class="priority-badge ${priority}">${label}</span>
           </div>
+          <div style="margin-top:5px">${riskBadge(r.spotify_id, risks)}</div>
         </td>
         <td>
           <div style="display:flex;flex-direction:column;gap:5px">
@@ -3042,8 +3505,50 @@ function renderAcquisition() {
           </div>
         </td>
       </tr>
-    `;
-  }).join('');
+    `);
+
+    // ── Mobile card ─────────────────────────────────────────────
+    cardItems.push(`
+      <div style="padding:14px 16px;border-bottom:0.5px solid var(--border);${isHot ? 'border-left:3px solid var(--green);' : ''}">
+        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">
+          ${favBtn(r.spotify_id, 'renderAcquisition')}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.playlist_name || '—')}</div>
+            <div style="font-size:12px;color:var(--ink3)">${esc(r.owner || '—')} · ${tierBadge(r.market)} ${esc(r.market)}</div>
+          </div>
+          ${posBadge(r.position)}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;align-items:center">
+          ${isHot ? '<span class="hot-asset-label">🔥 Hot Asset</span>' : ''}
+          ${sonicProfile(r.genre)}
+          ${riskBadge(r.spotify_id, risks)}
+          ${r.is_dormant ? '<span class="dormant-chip">💤 Dormant</span>' : ''}
+          ${hasContact ? '<span style="font-size:10px;color:var(--green);font-weight:600">● contact</span>' : ''}
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div>
+            <div style="font-size:11px;color:var(--ink3)">Followers</div>
+            <div style="font-size:13px;font-weight:600">${fmtNum(r.followers)}</div>
+            <div class="price-tag${isHot ? ' arb' : ''}">${fmtPrice(price)}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:11px;color:var(--ink3)">Score</div>
+            <div style="display:flex;align-items:center;gap:5px;justify-content:flex-end">
+              <span style="font-family:var(--ff-serif);font-size:16px">${score}</span>
+              <span class="priority-badge ${priority}">${label}</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          ${crmSelect(r.spotify_id, crmSt, 'updateCRMStatus')}
+          <div class="action-btns">${actBtns.join('')}</div>
+        </div>
+      </div>
+    `);
+  });
+
+  tbody.innerHTML = tableRows.join('');
+  if (cardsEl) cardsEl.innerHTML = cardItems.join('');
 }
 
 // ── Priority Scout Alerts (Dashboard panel) ───────────────────────
@@ -3166,6 +3671,234 @@ async function updateCRMNotes(spotifyId, notes) {
       body: JSON.stringify({ notes }),
     });
   } catch(e) { /* silent */ }
+}
+
+// ── Favorites system ─────────────────────────────────────────────
+S.favorites    = new Set(JSON.parse(localStorage.getItem('rkfy_favs') || '[]'));
+S.acqFavOnly   = false;
+S.leadsFavOnly = false;
+S.riskMap      = {};  // spotify_id → [{ tag, icon, reason }]
+
+function toggleFavorite(spotifyId, rerenderFn) {
+  if (S.favorites.has(spotifyId)) {
+    S.favorites.delete(spotifyId);
+  } else {
+    S.favorites.add(spotifyId);
+    showToast('Starred ★', 'success');
+  }
+  localStorage.setItem('rkfy_favs', JSON.stringify([...S.favorites]));
+  if (rerenderFn) rerenderFn();
+}
+
+function favBtn(spotifyId, rerenderFn) {
+  const starred = S.favorites.has(spotifyId);
+  return `<button class="fav-btn${starred ? ' starred' : ''}" title="${starred ? 'Unstar' : 'Star'}" onclick="toggleFavorite('${esc(spotifyId)}',${rerenderFn})">${starred ? '★' : '☆'}</button>`;
+}
+
+function toggleAcqFavOnly() {
+  S.acqFavOnly = !S.acqFavOnly;
+  const btn = el('acq-fav-toggle');
+  if (btn) btn.classList.toggle('active', S.acqFavOnly);
+  renderAcquisition();
+}
+
+function toggleLeadsFavOnly() {
+  S.leadsFavOnly = !S.leadsFavOnly;
+  const btn = el('leads-fav-toggle');
+  if (btn) btn.classList.toggle('active', S.leadsFavOnly);
+  renderLeads();
+}
+
+// ── Market Price calculation ──────────────────────────────────────
+function calcMarketPrice(followers, position, market) {
+  const base     = (Number(followers) || 0) * 0.015;
+  const tierMult = TIER1_MKTS.has(market) ? 1.5 : TIER2_MKTS.has(market) ? 1.2 : TIER3_MKTS.has(market) ? 0.8 : 1.0;
+  const pos      = Number(position) || 10;
+  const rankBonus = pos <= 1 ? 2.0 : pos <= 3 ? 1.5 : pos <= 5 ? 1.2 : 1.0;
+  return Math.round(base * tierMult * rankBonus);
+}
+
+function fmtPrice(usd) {
+  if (!usd) return '$0';
+  if (usd >= 1e6) return '$' + (usd / 1e6).toFixed(1) + 'M';
+  if (usd >= 1e3) return '$' + (usd / 1e3).toFixed(1) + 'K';
+  return '$' + usd.toLocaleString();
+}
+
+// ── Risk / Fraud Detection ────────────────────────────────────────
+function detectRisk(row) {
+  const risks    = [];
+  const followers = Number(row.followers) || 0;
+  const position  = Number(row.position)  || 10;
+  const genre     = (row.genre || '').toLowerCase().trim();
+
+  // Growth Spike: high followers but poor ranking → possible bought followers
+  if (followers > 8000 && position > 6) {
+    risks.push({
+      tag: 'Growth Spike',
+      icon: '📈',
+      reason: `${fmtNum(followers)} followers but ranked only #${position}. High follower counts with low search visibility may indicate inorganic growth.`,
+    });
+  }
+  // Genre Chaos: no identifiable genre
+  if (!genre || genre === 'music' || genre.length < 3) {
+    risks.push({
+      tag: 'Genre Chaos',
+      icon: '🎲',
+      reason: 'No clear genre detected. Playlists without a defined genre tend to have lower discovery rates and inconsistent audience retention.',
+    });
+  }
+  // Zero Engagement: suspiciously low followers for ranking position
+  if (followers > 0 && followers < 120 && position <= 5) {
+    risks.push({
+      tag: 'Zero Engagement',
+      icon: '👻',
+      reason: `Only ${followers} followers for a #${position} ranking. This is unusually low — the playlist may have been artificially boosted or the data is stale.`,
+    });
+  }
+  // Dormant: flagged by server
+  if (row.is_dormant) {
+    risks.push({
+      tag: 'Dormant',
+      icon: '💤',
+      reason: 'Followers have not changed significantly in 30+ days. The curator may be inactive, reducing the long-term value of acquisition.',
+    });
+  }
+  return risks;
+}
+
+function riskBadge(spotifyId, risks) {
+  if (!risks.length) return `<span class="risk-badge clean">✓ Clean</span>`;
+  const level = risks.length >= 2 ? 'high' : 'med';
+  const label = esc(risks[0].tag) + (risks.length > 1 ? ` +${risks.length - 1}` : '');
+  return `<button class="risk-badge ${level}" onclick="openRiskModal('${esc(spotifyId)}')">${risks.length >= 2 ? '⚠' : '⚡'} ${label}</button>`;
+}
+
+function openRiskModal(spotifyId) {
+  const risks = S.riskMap[spotifyId] || [];
+  const name  = S.riskNames?.[spotifyId] || spotifyId;
+  el('risk-modal-name').textContent = name;
+  el('risk-modal-reasons').innerHTML = risks.length
+    ? risks.map(r => `
+        <div class="risk-reason">
+          <div class="risk-reason-icon">${r.icon}</div>
+          <div>
+            <div class="risk-reason-label">${esc(r.tag)}</div>
+            <div class="risk-reason-text">${esc(r.reason)}</div>
+          </div>
+        </div>`).join('')
+    : '<div class="panel-empty">No risk factors detected — this asset looks clean.</div>';
+  openModal('modal-risk');
+}
+
+// ── Sonic Profile ─────────────────────────────────────────────────
+const SONIC_MAP = [
+  { type: 'energy', label: '⚡ High Energy', keywords: ['house','tech house','afro house','hip hop','edm','dance','drum and bass','trap','pop','phonk','hardstyle'] },
+  { type: 'sleep',  label: '🌙 Sleep/Study', keywords: ['ambient','sleep','meditation','binaural','lo-fi','lofi','lo fi','study','focus','nature sounds','white noise','rain'] },
+  { type: 'chill',  label: '🌊 Chill',       keywords: ['chill','chillout','jazz','bossa nova','soul','neo soul','downtempo','indie pop','acoustic','coffee','soft'] },
+  { type: 'groove', label: '🎷 Groove',       keywords: ['r&b','funk','disco','afrobeats','reggaeton','salsa','latin','groove','smooth','blues'] },
+];
+
+function sonicProfile(genre) {
+  if (!genre) return `<span class="sonic-badge mixed">🎵 Mixed</span>`;
+  const g = genre.toLowerCase();
+  for (const { type, label, keywords } of SONIC_MAP) {
+    if (keywords.some(k => g.includes(k))) {
+      return `<span class="sonic-badge ${type}">${label}</span>`;
+    }
+  }
+  return `<span class="sonic-badge mixed">🎵 ${esc(genre)}</span>`;
+}
+
+// ── Filter Drawer (mobile) ────────────────────────────────────────
+let _filterDrawerView = null;
+
+function openFilterDrawer(view) {
+  _filterDrawerView = view;
+  const body = el('filter-drawer-body');
+
+  if (view === 'acquisition') {
+    el('filter-drawer-title').textContent = 'Acquisition Filters';
+    body.innerHTML = `
+      <div class="filter-drawer-field">
+        <label class="filter-drawer-label">Search</label>
+        <input class="input" placeholder="Playlist or owner…" value="${esc(el('acq-search')?.value || '')}"
+          oninput="el('acq-search').value=this.value;renderAcquisition()" />
+      </div>
+      <div class="filter-drawer-field">
+        <label class="filter-drawer-label">Genre</label>
+        <select class="select" style="width:100%" onchange="el('acq-genre-filter').value=this.value;renderAcquisition()">
+          ${el('acq-genre-filter').innerHTML}
+        </select>
+      </div>
+      <div class="filter-drawer-field">
+        <label class="filter-drawer-label">Market</label>
+        <select class="select" style="width:100%" onchange="el('acq-market-filter').value=this.value;renderAcquisition()">
+          ${el('acq-market-filter').innerHTML}
+        </select>
+      </div>
+      <div class="filter-drawer-field">
+        <label class="filter-drawer-label">Follower Range</label>
+        <select class="select" style="width:100%" onchange="el('acq-followers-filter').value=this.value;renderAcquisition()">
+          ${el('acq-followers-filter').innerHTML}
+        </select>
+      </div>
+      <div class="filter-drawer-field">
+        <label class="filter-drawer-label">CRM Status</label>
+        <select class="select" style="width:100%" onchange="el('acq-status-filter').value=this.value;renderAcquisition()">
+          ${el('acq-status-filter').innerHTML}
+        </select>
+      </div>
+    `;
+  } else if (view === 'leads') {
+    el('filter-drawer-title').textContent = 'Lead Filters';
+    body.innerHTML = `
+      <div class="filter-drawer-field">
+        <label class="filter-drawer-label">Search</label>
+        <input class="input" placeholder="Curator or playlist…" value="${esc(el('leads-search')?.value || '')}"
+          oninput="el('leads-search').value=this.value;renderLeads()" />
+      </div>
+      <div class="filter-drawer-field">
+        <label class="filter-drawer-label">Genre</label>
+        <select class="select" style="width:100%" onchange="el('leads-genre-filter').value=this.value;renderLeads()">
+          ${el('leads-genre-filter').innerHTML}
+        </select>
+      </div>
+      <div class="filter-drawer-field">
+        <label class="filter-drawer-label">Market</label>
+        <select class="select" style="width:100%" onchange="el('leads-market-filter').value=this.value;renderLeads()">
+          ${el('leads-market-filter').innerHTML}
+        </select>
+      </div>
+    `;
+  }
+
+  el('filter-drawer-overlay').classList.add('open');
+  // Slight delay so overlay renders before transition
+  requestAnimationFrame(() => el('filter-drawer').classList.add('open'));
+}
+
+function closeFilterDrawer() {
+  el('filter-drawer').classList.remove('open');
+  el('filter-drawer-overlay').classList.remove('open');
+}
+
+function clearActiveFilters() {
+  if (_filterDrawerView === 'acquisition') {
+    el('acq-search').value = '';
+    el('acq-genre-filter').value = '';
+    el('acq-market-filter').value = '';
+    el('acq-followers-filter').value = '';
+    el('acq-status-filter').value = '';
+    renderAcquisition();
+  } else if (_filterDrawerView === 'leads') {
+    el('leads-search').value = '';
+    el('leads-genre-filter').value = '';
+    el('leads-market-filter').value = '';
+    renderLeads();
+  }
+  // Sync the drawer inputs
+  openFilterDrawer(_filterDrawerView);
 }
 
 // ── Seasonal suggestions ──────────────────────────────────────────
