@@ -1,0 +1,1876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rankify</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Reset & base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+
+    :root {
+      --ink:      #0f0f0f;
+      --ink2:     #525252;
+      --ink3:     #a3a3a3;
+      --surface:  #ffffff;
+      --surface2: #f6f6f6;
+      --surface3: #efefef;
+      --border:   rgba(0,0,0,0.08);
+      --border2:  rgba(0,0,0,0.13);
+      --green:    #1db954;
+      --green-bg: rgba(29,185,84,0.10);
+      --red:      #e5484d;
+      --red-bg:   rgba(229,72,77,0.10);
+      --amber:    #d97706;
+      --amber-bg: rgba(217,119,6,0.10);
+      --blue:     #2563eb;
+      --blue-bg:  rgba(37,99,235,0.10);
+      --sidebar:  210px;
+      --topbar:   48px;
+      --r:        8px;
+      --rlg:      12px;
+      --rpill:    20px;
+      --ff-serif: 'Instrument Serif', Georgia, serif;
+      --ff-ui:    'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --ink:      #ededed;
+        --ink2:     #a3a3a3;
+        --ink3:     #525252;
+        --surface:  #1c1c1c;
+        --surface2: #141414;
+        --surface3: #222222;
+        --border:   rgba(255,255,255,0.08);
+        --border2:  rgba(255,255,255,0.14);
+        --green-bg: rgba(29,185,84,0.12);
+        --red-bg:   rgba(229,72,77,0.12);
+        --amber-bg: rgba(217,119,6,0.12);
+        --blue-bg:  rgba(37,99,235,0.12);
+      }
+    }
+
+    body {
+      font-family: var(--ff-ui);
+      font-size: 14px;
+      color: var(--ink);
+      background: var(--surface2);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Layout ───────────────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar);
+      min-width: var(--sidebar);
+      height: 100vh;
+      background: var(--surface);
+      border-right: 0.5px solid var(--border2);
+      display: flex;
+      flex-direction: column;
+      padding: 16px 0 16px;
+      overflow: hidden;
+    }
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .topbar {
+      height: var(--topbar);
+      min-height: var(--topbar);
+      background: var(--surface);
+      border-bottom: 0.5px solid var(--border2);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 12px;
+    }
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    /* ── Sidebar ──────────────────────────────────────────────── */
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 0 14px 18px;
+      border-bottom: 0.5px solid var(--border);
+      margin-bottom: 8px;
+    }
+    .logo-icon {
+      width: 26px;
+      height: 26px;
+      background: var(--ink);
+      color: var(--surface);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--ff-serif);
+      font-size: 15px;
+      letter-spacing: -0.5px;
+      flex-shrink: 0;
+    }
+    .logo-wordmark {
+      font-family: var(--ff-serif);
+      font-size: 17px;
+      letter-spacing: -0.3px;
+      color: var(--ink);
+    }
+    .logo-wordmark em {
+      font-style: italic;
+      color: var(--green);
+    }
+
+    .nav-section {
+      padding: 0 10px;
+      margin-bottom: 4px;
+    }
+    .nav-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink3);
+      padding: 8px 6px 4px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 8px;
+      border-radius: var(--r);
+      color: var(--ink2);
+      font-size: 13.5px;
+      font-weight: 450;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.12s, color 0.12s;
+      border-left: 2.5px solid transparent;
+      margin-bottom: 1px;
+      user-select: none;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--ink); }
+    .nav-item.active {
+      background: var(--surface2);
+      color: var(--ink);
+      font-weight: 500;
+      border-left-color: var(--ink);
+    }
+    .nav-item svg { flex-shrink: 0; opacity: 0.7; }
+    .nav-item.active svg { opacity: 1; }
+    .nav-item .badge-alert {
+      margin-left: auto;
+      background: var(--red);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 10px;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    .sidebar-bottom {
+      margin-top: auto;
+      padding: 12px 12px 0;
+      border-top: 0.5px solid var(--border);
+    }
+    .btn-crawl {
+      width: 100%;
+      background: var(--ink);
+      color: var(--surface);
+      border: none;
+      border-radius: var(--r);
+      padding: 9px 14px;
+      font-family: var(--ff-ui);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: opacity 0.15s;
+      margin-bottom: 8px;
+    }
+    .btn-crawl:hover { opacity: 0.85; }
+    .btn-crawl:disabled { opacity: 0.5; cursor: not-allowed; }
+    .last-sync-text {
+      font-size: 11px;
+      color: var(--ink3);
+      text-align: center;
+      padding-bottom: 2px;
+    }
+
+    /* ── Topbar ───────────────────────────────────────────────── */
+    .page-title {
+      font-family: var(--ff-serif);
+      font-size: 18px;
+      letter-spacing: -0.3px;
+      color: var(--ink);
+      flex: 1;
+    }
+    .market-pill {
+      appearance: none;
+      background: var(--surface2);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--rpill);
+      padding: 5px 14px 5px 12px;
+      font-family: var(--ff-ui);
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--ink2);
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a3a3a3' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 28px;
+    }
+    .market-pill:hover { border-color: var(--ink3); }
+    .notion-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface2);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--rpill);
+      padding: 5px 12px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--ink2);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .notion-pill:hover { border-color: var(--ink3); }
+    .notion-pill.connected { color: var(--green); border-color: var(--green); background: var(--green-bg); }
+    .notion-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--ink3);
+      flex-shrink: 0;
+    }
+    .notion-pill.connected .notion-dot { background: var(--green); }
+
+    /* ── Metric cards ─────────────────────────────────────────── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .metric-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--rlg);
+      padding: 18px 20px;
+      transition: border-color 0.15s;
+    }
+    .metric-card:hover { border-color: var(--ink3); }
+    .metric-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink3);
+      letter-spacing: 0.01em;
+      display: block;
+      margin-bottom: 8px;
+    }
+    .metric-value {
+      font-family: var(--ff-serif);
+      font-size: 30px;
+      color: var(--ink);
+      letter-spacing: -0.5px;
+      display: block;
+      line-height: 1;
+    }
+    .metric-value.green { color: var(--green); }
+
+    /* ── Panels / cards ───────────────────────────────────────── */
+    .panel {
+      background: var(--surface);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--rlg);
+      overflow: hidden;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .panel-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .panel-meta { font-size: 12px; color: var(--ink3); }
+    .panel-body { padding: 0; }
+    .panel-empty {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--ink3);
+      font-size: 13px;
+    }
+
+    /* ── Two-column layout ────────────────────────────────────── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    /* ── Playlist tabs ────────────────────────────────────────── */
+    .playlist-tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .playlist-tab {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 12px 6px 8px;
+      border-radius: var(--rpill);
+      border: 0.5px solid var(--border2);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--ink2);
+      transition: all 0.12s;
+      user-select: none;
+    }
+    .playlist-tab:hover { background: var(--surface2); color: var(--ink); }
+    .playlist-tab.active {
+      background: var(--ink);
+      color: var(--surface);
+      border-color: var(--ink);
+    }
+    .playlist-tab .tab-img {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .playlist-tab .tab-fallback {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      background: var(--surface3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--ink3);
+      flex-shrink: 0;
+    }
+    .playlist-tab.active .tab-fallback { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); }
+
+    /* ── Ranking rows (in dashboard panel) ───────────────────── */
+    .rank-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      border-bottom: 0.5px solid var(--border);
+      transition: background 0.1s;
+    }
+    .rank-row:last-child { border-bottom: none; }
+    .rank-row:hover { background: var(--surface2); }
+    .rank-row .kw-term { flex: 1; font-size: 13px; font-weight: 500; color: var(--ink); }
+    .rank-row .kw-mkt { font-size: 11px; font-weight: 600; color: var(--ink3); background: var(--surface2); padding: 2px 7px; border-radius: 4px; }
+
+    /* ── Alert rows (in dashboard panel) ─────────────────────── */
+    .alert-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 11px 18px;
+      border-bottom: 0.5px solid var(--border);
+      transition: background 0.1s;
+    }
+    .alert-row:last-child { border-bottom: none; }
+    .alert-row:hover { background: var(--surface2); }
+    .alert-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+    .alert-dot.top3  { background: var(--green); }
+    .alert-dot.rise  { background: var(--blue); }
+    .alert-dot.drop  { background: var(--red); }
+    .alert-msg { font-size: 13px; color: var(--ink); flex: 1; line-height: 1.4; }
+    .alert-meta { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+
+    /* ── Chart section ────────────────────────────────────────── */
+    .chart-wrap {
+      background: var(--surface);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--rlg);
+      padding: 18px 20px 16px;
+      margin-top: 12px;
+    }
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .chart-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .chart-sub { font-size: 11.5px; color: var(--ink3); }
+    .chart-canvas-wrap { height: 160px; }
+
+    /* ── Rankings table ───────────────────────────────────────── */
+    .rankings-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .rankings-table th {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--ink3);
+      padding: 10px 18px;
+      text-align: left;
+      border-bottom: 0.5px solid var(--border);
+      background: var(--surface);
+    }
+    .rankings-table td {
+      padding: 10px 18px;
+      border-bottom: 0.5px solid var(--border);
+      font-size: 13px;
+      color: var(--ink);
+    }
+    .rankings-table tr:last-child td { border-bottom: none; }
+    .rankings-table tbody tr:hover td { background: var(--surface2); }
+    .td-playlist { display: flex; align-items: center; gap: 8px; }
+    .td-art {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .td-art-fb {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      background: var(--surface3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--ink3);
+      flex-shrink: 0;
+    }
+    .td-name { font-weight: 500; max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .td-label { font-size: 11px; color: var(--ink3); margin-top: 1px; }
+
+    /* ── Badges ───────────────────────────────────────────────── */
+    .badge-pos {
+      display: inline-flex;
+      align-items: center;
+      font-family: var(--ff-serif);
+      font-size: 14px;
+      font-weight: 400;
+      padding: 2px 9px;
+      border-radius: 6px;
+    }
+    .badge-pos.top3     { background: var(--green-bg); color: var(--green); }
+    .badge-pos.top10    { background: var(--amber-bg); color: var(--amber); }
+    .badge-pos.ranked   { background: var(--blue-bg);  color: var(--blue); }
+    .badge-pos.unranked { background: var(--surface2); color: var(--ink3); font-size: 12px; }
+
+    .badge-mkt {
+      display: inline-flex;
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--ink3);
+      background: var(--surface2);
+      border: 0.5px solid var(--border2);
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    .delta { font-size: 12.5px; font-weight: 600; }
+    .delta.up   { color: var(--green); }
+    .delta.down { color: var(--red); }
+    .delta.muted { color: var(--ink3); }
+
+    .label-badge {
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--surface2);
+      color: var(--ink3);
+      border: 0.5px solid var(--border2);
+      padding: 2px 8px;
+      border-radius: var(--rpill);
+    }
+
+    /* ── Opportunity cards ────────────────────────────────────── */
+    .opp-list { display: flex; flex-direction: column; gap: 8px; }
+    .opp-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--rlg);
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      transition: border-color 0.12s;
+    }
+    .opp-card:hover { border-color: var(--ink3); }
+    .opp-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--r);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 16px;
+    }
+    .opp-icon.quick_win  { background: var(--green-bg); }
+    .opp-icon.momentum   { background: var(--blue-bg); }
+    .opp-icon.protect    { background: var(--amber-bg); }
+    .opp-icon.unranked   { background: var(--red-bg); }
+    .opp-body { flex: 1; }
+    .opp-title { font-size: 13.5px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+    .opp-desc  { font-size: 13px; color: var(--ink2); line-height: 1.45; margin-bottom: 8px; }
+    .opp-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .opp-chip {
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 2px 9px;
+      border-radius: var(--rpill);
+      border: 0.5px solid var(--border2);
+      color: var(--ink2);
+    }
+    .opp-chip.type-quick_win { background: var(--green-bg);  color: var(--green); border-color: transparent; }
+    .opp-chip.type-momentum  { background: var(--blue-bg);   color: var(--blue);  border-color: transparent; }
+    .opp-chip.type-protect   { background: var(--amber-bg);  color: var(--amber); border-color: transparent; }
+    .opp-chip.type-unranked  { background: var(--red-bg);    color: var(--red);   border-color: transparent; }
+
+    /* ── Playlists list ───────────────────────────────────────── */
+    .pl-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 18px;
+      border-bottom: 0.5px solid var(--border);
+      transition: background 0.1s;
+    }
+    .pl-row:last-child { border-bottom: none; }
+    .pl-row:hover { background: var(--surface2); }
+    .pl-art {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .pl-art-fb {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      background: var(--surface3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink3);
+      flex-shrink: 0;
+    }
+    .pl-info { flex: 1; min-width: 0; }
+    .pl-name {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 3px;
+    }
+    .pl-meta { font-size: 12px; color: var(--ink3); }
+    .pl-actions { display: flex; align-items: center; gap: 8px; }
+
+    /* ── Keywords list ────────────────────────────────────────── */
+    .kw-group { margin-bottom: 20px; }
+    .kw-group-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink3);
+      margin-bottom: 8px;
+    }
+    .kw-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .kw-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--rpill);
+      padding: 5px 10px 5px 13px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink);
+      transition: border-color 0.12s;
+    }
+    .kw-tag:hover { border-color: var(--ink3); }
+    .kw-remove {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: none;
+      background: var(--surface3);
+      color: var(--ink3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      line-height: 1;
+      transition: background 0.12s, color 0.12s;
+    }
+    .kw-remove:hover { background: var(--red-bg); color: var(--red); }
+
+    .kw-add-form {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      background: var(--surface);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--rlg);
+      padding: 14px 16px;
+    }
+
+    /* ── Settings ─────────────────────────────────────────────── */
+    .settings-section {
+      background: var(--surface);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--rlg);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .settings-section-header {
+      padding: 14px 18px;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .settings-section-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 2px;
+    }
+    .settings-section-sub { font-size: 12px; color: var(--ink3); }
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 18px;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row-label { font-size: 13px; color: var(--ink2); }
+    .settings-row-value { font-size: 13px; color: var(--ink); font-weight: 500; }
+    .status-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      font-weight: 500;
+    }
+    .status-dot::before {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+    .status-dot.ok::before    { background: var(--green); }
+    .status-dot.warn::before  { background: var(--amber); }
+    .status-dot.err::before   { background: var(--red); }
+
+    /* ── Inputs & buttons ─────────────────────────────────────── */
+    .input {
+      background: var(--surface2);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--r);
+      padding: 8px 12px;
+      font-family: var(--ff-ui);
+      font-size: 13.5px;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+    .input:focus { border-color: var(--ink3); background: var(--surface); }
+    .input::placeholder { color: var(--ink3); }
+
+    .select {
+      background: var(--surface2);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--r);
+      padding: 8px 12px;
+      font-family: var(--ff-ui);
+      font-size: 13.5px;
+      color: var(--ink);
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a3a3a3' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 28px;
+    }
+    .select:focus { border-color: var(--ink3); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: var(--r);
+      border: 0.5px solid var(--border2);
+      background: var(--surface);
+      color: var(--ink);
+      font-family: var(--ff-ui);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--surface2); }
+    .btn.primary {
+      background: var(--ink);
+      color: var(--surface);
+      border-color: var(--ink);
+    }
+    .btn.primary:hover { opacity: 0.85; }
+    .btn.danger { color: var(--red); border-color: var(--red-bg); }
+    .btn.danger:hover { background: var(--red-bg); }
+    .btn.sm { padding: 5px 10px; font-size: 12px; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ── Modals ───────────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 900;
+      animation: fadeIn 0.15s ease;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal-box {
+      background: var(--surface);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--rlg);
+      padding: 28px;
+      width: 440px;
+      max-width: calc(100vw - 40px);
+      animation: modalIn 0.15s ease;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+    }
+    .modal-title {
+      font-family: var(--ff-serif);
+      font-size: 20px;
+      color: var(--ink);
+      margin-bottom: 4px;
+      letter-spacing: -0.3px;
+    }
+    .modal-sub { font-size: 13px; color: var(--ink3); margin-bottom: 22px; }
+    .modal-field { margin-bottom: 14px; }
+    .modal-label { font-size: 12px; font-weight: 600; color: var(--ink2); margin-bottom: 6px; display: block; }
+    .modal-hint { font-size: 12px; color: var(--ink3); margin-top: 6px; line-height: 1.5; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 22px; }
+
+    @keyframes fadeIn  { from { opacity: 0; } }
+    @keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(6px); } }
+
+    /* ── Toasts ───────────────────────────────────────────────── */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      background: var(--ink);
+      color: var(--surface);
+      padding: 10px 14px;
+      border-radius: var(--r);
+      font-size: 13px;
+      font-weight: 450;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 220px;
+      animation: toastIn 0.2s ease;
+      pointer-events: all;
+      border: 0.5px solid rgba(255,255,255,0.08);
+    }
+    .toast .t-icon { font-size: 14px; flex-shrink: 0; }
+    .toast.t-error .t-icon { color: var(--red); }
+    .toast.t-success .t-icon { color: var(--green); }
+    .toast.out { animation: toastOut 0.2s ease forwards; }
+    @keyframes toastIn  { from { opacity: 0; transform: translateY(6px); } }
+    @keyframes toastOut { to   { opacity: 0; transform: translateY(6px); } }
+
+    /* ── Spinner ──────────────────────────────────────────────── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 13px;
+      height: 13px;
+      border: 1.5px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    /* ── Misc ─────────────────────────────────────────────────── */
+    .view { display: none; }
+    .view.active { display: block; }
+    .section-gap { margin-bottom: 12px; }
+    .flex-between { display: flex; align-items: center; justify-content: space-between; }
+    .flex-gap { display: flex; align-items: center; gap: 8px; }
+    a.ext-link { color: var(--ink3); text-decoration: none; font-size: 12px; transition: color 0.12s; }
+    a.ext-link:hover { color: var(--ink); }
+    .text-muted { color: var(--ink3); font-size: 12.5px; }
+  </style>
+</head>
+<body>
+
+<!-- ──────────────────────────────────────────────────────────────
+     SIDEBAR
+─────────────────────────────────────────────────────────────── -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">R</div>
+    <span class="logo-wordmark">Rank<em>ify</em></span>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">Monitor</div>
+    <div class="nav-item active" data-view="dashboard" onclick="navigate('dashboard')">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1" y="1" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="8.5" y="1" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="1" y="8.5" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="8.5" y="8.5" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" data-view="rankings" onclick="navigate('rankings')">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1 11h3v3H1zM5.5 7h3v7h-3zM10 3h4v11h-4z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+      Rankings
+    </div>
+    <div class="nav-item" data-view="opportunities" onclick="navigate('opportunities')">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1v2M7.5 12v2M1 7.5h2M12 7.5h2M3.2 3.2l1.4 1.4M10.4 10.4l1.4 1.4M3.2 11.8l1.4-1.4M10.4 4.6l1.4-1.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="7.5" cy="7.5" r="2.5" stroke="currentColor" stroke-width="1.3"/></svg>
+      Opportunities
+    </div>
+    <div class="nav-item" data-view="alerts" onclick="navigate('alerts')">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5a5 5 0 015 5v3l1 2H1.5l1-2v-3a5 5 0 015-5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M6 12.5a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Alerts
+      <span class="badge-alert" id="alert-badge" style="display:none">0</span>
+    </div>
+  </div>
+
+  <div class="nav-section" style="margin-top:8px">
+    <div class="nav-section-label">Manage</div>
+    <div class="nav-item" data-view="playlists" onclick="navigate('playlists')">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 5.5L9.5 7.5L5.5 9.5V5.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+      Playlists
+    </div>
+    <div class="nav-item" data-view="keywords" onclick="navigate('keywords')">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 4.5h11M2 7.5h8M2 10.5h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Keywords
+    </div>
+    <div class="nav-item" data-view="settings" onclick="navigate('settings')">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 1.5v1M7.5 12.5v1M1.5 7.5h1M12.5 7.5h1M3.3 3.3l.7.7M11 11l.7.7M11 3.3l-.7.7M3.3 11l.7-.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Settings
+    </div>
+  </div>
+
+  <div class="sidebar-bottom">
+    <button class="btn-crawl" id="crawl-btn" onclick="triggerCrawl()">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1A5.5 5.5 0 111 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M1 2.5V1h1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Run Crawl
+    </button>
+    <div class="last-sync-text" id="last-sync">Never synced</div>
+  </div>
+</aside>
+
+<!-- ──────────────────────────────────────────────────────────────
+     MAIN
+─────────────────────────────────────────────────────────────── -->
+<div class="main">
+  <!-- Topbar -->
+  <header class="topbar">
+    <span class="page-title" id="page-title">Dashboard</span>
+    <select class="market-pill" id="market-filter" onchange="onMarketChange(this.value)">
+      <option value="">All Markets</option>
+    </select>
+    <div class="notion-pill" id="notion-pill" onclick="openModal('modal-notion')">
+      <span class="notion-dot"></span>
+      <span id="notion-pill-text">Connect Notion</span>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- ── DASHBOARD ────────────────────────────────────────── -->
+    <div class="view active" data-view="dashboard" id="view-dashboard">
+      <!-- Metrics -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <span class="metric-label">Playlists</span>
+          <span class="metric-value" id="stat-playlists">—</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Keywords</span>
+          <span class="metric-value" id="stat-keywords">—</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Top 3 Spots</span>
+          <span class="metric-value green" id="stat-top3">—</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Data Points</span>
+          <span class="metric-value" id="stat-datapoints">—</span>
+        </div>
+      </div>
+
+      <!-- Playlist tabs -->
+      <div class="playlist-tabs" id="playlist-tabs"></div>
+
+      <!-- 2-col -->
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Top Keywords</span>
+            <span class="panel-meta" id="dash-kw-market"></span>
+          </div>
+          <div class="panel-body" id="dash-keywords"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Recent Alerts</span>
+            <span class="panel-meta" id="dash-alerts-count"></span>
+          </div>
+          <div class="panel-body" id="dash-alerts"></div>
+        </div>
+      </div>
+
+      <!-- Follower chart -->
+      <div class="chart-wrap">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Follower Growth</div>
+            <div class="chart-sub">Last 90 days</div>
+          </div>
+        </div>
+        <div class="chart-canvas-wrap">
+          <canvas id="follower-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RANKINGS ──────────────────────────────────────────── -->
+    <div class="view" data-view="rankings" id="view-rankings">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">All Rankings</span>
+          <button class="btn sm" onclick="exportCSV()">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v7M3.5 5.5L6 8l2.5-2.5M1.5 9.5v1a.5.5 0 00.5.5h8a.5.5 0 00.5-.5v-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Export CSV
+          </button>
+        </div>
+        <div class="panel-body">
+          <table class="rankings-table">
+            <thead>
+              <tr>
+                <th>Keyword</th>
+                <th>Playlist</th>
+                <th>Market</th>
+                <th>Position</th>
+                <th>7-Day</th>
+              </tr>
+            </thead>
+            <tbody id="rankings-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── OPPORTUNITIES ─────────────────────────────────────── -->
+    <div class="view" data-view="opportunities" id="view-opportunities">
+      <div class="flex-between section-gap">
+        <div>
+          <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Growth Opportunities</div>
+          <div class="text-muted" style="margin-top:3px">Auto-generated from your ranking data</div>
+        </div>
+      </div>
+      <div class="opp-list" id="opp-list"></div>
+    </div>
+
+    <!-- ── ALERTS ────────────────────────────────────────────── -->
+    <div class="view" data-view="alerts" id="view-alerts">
+      <div class="flex-between section-gap">
+        <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Alerts</div>
+        <button class="btn sm" onclick="markAlertsSeen()">Mark all read</button>
+      </div>
+      <div class="panel">
+        <div class="panel-body" id="alerts-list"></div>
+      </div>
+    </div>
+
+    <!-- ── PLAYLISTS ──────────────────────────────────────────── -->
+    <div class="view" data-view="playlists" id="view-playlists">
+      <div class="flex-between section-gap">
+        <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Playlists</div>
+        <button class="btn primary" onclick="openModal('modal-playlist')">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Add Playlist
+        </button>
+      </div>
+      <div class="panel">
+        <div class="panel-body" id="playlists-list"></div>
+      </div>
+    </div>
+
+    <!-- ── KEYWORDS ───────────────────────────────────────────── -->
+    <div class="view" data-view="keywords" id="view-keywords">
+      <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px;margin-bottom:16px">Keywords</div>
+      <div class="kw-add-form" id="kw-add-form">
+        <input class="input" id="kw-input" placeholder="e.g. indie pop" style="flex:1" onkeydown="if(event.key==='Enter')addKeyword()" />
+        <select class="select" id="kw-market" style="width:110px">
+          <option value="US">US</option>
+          <option value="GB">GB</option>
+          <option value="AU">AU</option>
+          <option value="CA">CA</option>
+          <option value="DE">DE</option>
+          <option value="FR">FR</option>
+          <option value="NL">NL</option>
+          <option value="SE">SE</option>
+          <option value="NO">NO</option>
+          <option value="BR">BR</option>
+          <option value="MX">MX</option>
+          <option value="ES">ES</option>
+          <option value="IT">IT</option>
+          <option value="PL">PL</option>
+          <option value="JP">JP</option>
+        </select>
+        <button class="btn primary" onclick="addKeyword()">Add</button>
+      </div>
+      <div id="keywords-list"></div>
+    </div>
+
+    <!-- ── SETTINGS ───────────────────────────────────────────── -->
+    <div class="view" data-view="settings" id="view-settings">
+      <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px;margin-bottom:16px">Settings</div>
+
+      <!-- Notion -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div class="settings-section-title">Notion Integration</div>
+          <div class="settings-section-sub">Sync rankings to a Notion database</div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">Connection</span>
+          <span class="status-dot" id="settings-notion-status">Not connected</span>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">Configure</span>
+          <button class="btn sm" onclick="openModal('modal-notion')">Open Setup</button>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">Manual sync</span>
+          <button class="btn sm" id="notion-sync-btn" onclick="notionSync()">Sync Now</button>
+        </div>
+      </div>
+
+      <!-- Crawl -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div class="settings-section-title">Crawl Schedule</div>
+          <div class="settings-section-sub">Automatic Spotify rank checks</div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">Schedule</span>
+          <span class="settings-row-value">Daily at 06:00 UTC</span>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">Last crawl</span>
+          <span class="settings-row-value" id="settings-last-crawl">—</span>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">Run now</span>
+          <button class="btn sm" onclick="triggerCrawl()">Run Crawl</button>
+        </div>
+      </div>
+
+      <!-- Spotify -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div class="settings-section-title">Spotify API</div>
+          <div class="settings-section-sub">Client credentials for search and metadata</div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">Auth flow</span>
+          <span class="settings-row-value">Client Credentials</span>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">Status</span>
+          <span class="status-dot ok" id="settings-spotify-status">Active</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ──────────────────────────────────────────────────────────────
+     MODALS
+─────────────────────────────────────────────────────────────── -->
+
+<!-- Add Playlist -->
+<div class="modal-overlay hidden" id="modal-playlist" onclick="overlayClose(event,'modal-playlist')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title">Add Playlist</div>
+    <div class="modal-sub">Fetch metadata directly from Spotify</div>
+    <div class="modal-field">
+      <label class="modal-label">Spotify Playlist URL</label>
+      <input class="input" id="pl-url" placeholder="https://open.spotify.com/playlist/..." />
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Label <span style="color:var(--ink3);font-weight:400">(optional)</span></label>
+      <input class="input" id="pl-label" placeholder="e.g. Defected Records" />
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Notes <span style="color:var(--ink3);font-weight:400">(optional)</span></label>
+      <input class="input" id="pl-notes" placeholder="Internal notes…" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-playlist')">Cancel</button>
+      <button class="btn primary" id="pl-add-btn" onclick="addPlaylist()">Add Playlist</button>
+    </div>
+  </div>
+</div>
+
+<!-- Notion Setup -->
+<div class="modal-overlay hidden" id="modal-notion" onclick="overlayClose(event,'modal-notion')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title">Connect Notion</div>
+    <div class="modal-sub">Sync rankings into your Notion workspace</div>
+    <div class="modal-field">
+      <label class="modal-label">Integration Token</label>
+      <input class="input" id="notion-token" type="password" placeholder="secret_xxxx…" />
+      <div class="modal-hint">Create an internal integration at <strong>notion.so/my-integrations</strong> and copy the token.</div>
+    </div>
+    <div class="modal-field" style="margin-top:14px">
+      <label class="modal-label">Database ID</label>
+      <input class="input" id="notion-db-id" placeholder="32-character database ID" />
+      <div class="modal-hint">Open the database in Notion, click Share → Copy link. The ID is the segment before the <code>?v=</code>.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-notion')">Cancel</button>
+      <button class="btn primary" id="notion-save-btn" onclick="testAndSaveNotion()">Test &amp; Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toasts"></div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     JAVASCRIPT
+─────────────────────────────────────────────────────────────── -->
+<script>
+'use strict';
+
+// ── State ────────────────────────────────────────────────────────
+const S = {
+  view: 'dashboard',
+  playlists: [],
+  keywords: [],
+  rankings: [],
+  stats: {},
+  market: '',
+  selectedPlaylist: null,
+  chart: null,
+  notionConnected: localStorage.getItem('notion_connected') === 'true',
+  dashAlerts: [],
+};
+
+// ── Helpers ──────────────────────────────────────────────────────
+const el  = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+async function api(url, opts = {}) {
+  const r = await fetch(url, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts,
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || r.statusText);
+  return data;
+}
+
+function timeAgo(d) {
+  if (!d) return '—';
+  const s = Math.floor((Date.now() - new Date(d)) / 1000);
+  if (s < 5)   return 'just now';
+  if (s < 60)  return `${s}s ago`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
+
+function fmtNum(n) {
+  if (!n && n !== 0) return '—';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return n.toLocaleString();
+}
+
+function posBadge(pos) {
+  if (pos == null) return `<span class="badge-pos unranked">—</span>`;
+  const cls = pos <= 3 ? 'top3' : pos <= 10 ? 'top10' : 'ranked';
+  return `<span class="badge-pos ${cls}">#${pos}</span>`;
+}
+
+function deltaBadge(pos, prev) {
+  if (pos == null || prev == null) return `<span class="delta muted">—</span>`;
+  const d = prev - pos;
+  if (d === 0) return `<span class="delta muted">—</span>`;
+  if (d > 0)   return `<span class="delta up">↑${d}</span>`;
+  return `<span class="delta down">↓${Math.abs(d)}</span>`;
+}
+
+function artOrFallback(url, name, size = 28) {
+  if (url) return `<img class="td-art" src="${esc(url)}" width="${size}" height="${size}" loading="lazy" onerror="this.style.display='none'" />`;
+  const init = (name || '?')[0].toUpperCase();
+  return `<div class="td-art-fb" style="width:${size}px;height:${size}px">${init}</div>`;
+}
+
+// ── Toast ────────────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  const t = document.createElement('div');
+  t.className = `toast t-${type}`;
+  t.innerHTML = `<span class="t-icon">${type === 'success' ? '✓' : '✕'}</span>${esc(msg)}`;
+  el('toasts').appendChild(t);
+  setTimeout(() => t.classList.add('out'), 2800);
+  setTimeout(() => t.remove(), 3100);
+}
+
+// ── Modals ───────────────────────────────────────────────────────
+function openModal(id) {
+  el(id).classList.remove('hidden');
+}
+function closeModal(id) {
+  el(id).classList.add('hidden');
+}
+function overlayClose(e, id) {
+  if (e.target === el(id)) closeModal(id);
+}
+
+// ── Navigation ───────────────────────────────────────────────────
+function navigate(view) {
+  S.view = view;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === view));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.dataset.view === view));
+  const titles = { dashboard:'Dashboard', rankings:'Rankings', opportunities:'Opportunities', alerts:'Alerts', playlists:'Playlists', keywords:'Keywords', settings:'Settings' };
+  el('page-title').textContent = titles[view] || view;
+  if (view === 'dashboard')     renderDashboard();
+  if (view === 'rankings')      renderRankings();
+  if (view === 'opportunities') loadOpportunities();
+  if (view === 'alerts')        loadAlerts();
+  if (view === 'playlists')     renderPlaylists();
+  if (view === 'keywords')      renderKeywords();
+  if (view === 'settings')      renderSettings();
+}
+
+// ── Init ─────────────────────────────────────────────────────────
+async function init() {
+  updateNotionPill();
+  await loadAll();
+  navigate('dashboard');
+}
+
+async function loadAll() {
+  const [stats, playlists, keywords, rankings] = await Promise.all([
+    api('/api/stats').catch(() => ({})),
+    api('/api/playlists').catch(() => []),
+    api('/api/keywords').catch(() => []),
+    api('/api/rankings').catch(() => []),
+  ]);
+  S.stats = stats;
+  S.playlists = playlists;
+  S.keywords = keywords;
+  S.rankings = rankings;
+
+  if (playlists.length && !S.selectedPlaylist) {
+    S.selectedPlaylist = playlists[0].id;
+  }
+
+  updateStatsCards();
+  updateAlertBadge();
+  populateMarketFilter();
+  updateLastSync();
+}
+
+// ── Stats ────────────────────────────────────────────────────────
+function updateStatsCards() {
+  const s = S.stats;
+  el('stat-playlists').textContent  = s.playlists  ?? '0';
+  el('stat-keywords').textContent   = s.keywords   ?? '0';
+  el('stat-top3').textContent       = s.top3       ?? '0';
+  el('stat-datapoints').textContent = fmtNum(s.data_points ?? 0);
+}
+
+function updateAlertBadge() {
+  const count = S.stats.unseen_alerts || 0;
+  const badge = el('alert-badge');
+  badge.textContent = count;
+  badge.style.display = count > 0 ? 'inline-flex' : 'none';
+}
+
+function updateLastSync() {
+  const lc = S.stats.last_crawl;
+  const txt = lc ? 'Last sync: ' + timeAgo(lc) : 'Never synced';
+  el('last-sync').textContent = txt;
+  const settingsEl = el('settings-last-crawl');
+  if (settingsEl) settingsEl.textContent = lc ? timeAgo(lc) : '—';
+}
+
+function populateMarketFilter() {
+  const markets = [...new Set(S.keywords.map(k => k.market))].sort();
+  const sel = el('market-filter');
+  const curr = sel.value;
+  sel.innerHTML = '<option value="">All Markets</option>' +
+    markets.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('');
+  if (curr && markets.includes(curr)) sel.value = curr;
+}
+
+function onMarketChange(val) {
+  S.market = val;
+  if (S.view === 'dashboard') renderDashboard();
+  if (S.view === 'rankings')  renderRankings();
+}
+
+// ── Notion pill ──────────────────────────────────────────────────
+function updateNotionPill() {
+  const pill = el('notion-pill');
+  const txt  = el('notion-pill-text');
+  if (S.notionConnected) {
+    pill.classList.add('connected');
+    txt.textContent = 'Notion synced';
+  } else {
+    pill.classList.remove('connected');
+    txt.textContent = 'Connect Notion';
+  }
+}
+
+// ── Dashboard ────────────────────────────────────────────────────
+async function renderDashboard() {
+  renderPlaylistTabs();
+  renderDashKeywords();
+  renderDashAlerts();
+  if (S.selectedPlaylist) loadFollowerChart(S.selectedPlaylist);
+}
+
+function renderPlaylistTabs() {
+  const container = el('playlist-tabs');
+  if (!S.playlists.length) { container.innerHTML = '<span class="text-muted">No playlists added yet.</span>'; return; }
+  container.innerHTML = S.playlists.map(p => {
+    const active = p.id === S.selectedPlaylist ? ' active' : '';
+    const img = p.image_url
+      ? `<img class="tab-img" src="${esc(p.image_url)}" loading="lazy" onerror="this.style.display='none'" />`
+      : `<div class="tab-fallback">${(p.name || '?')[0].toUpperCase()}</div>`;
+    return `<div class="playlist-tab${active}" onclick="selectPlaylist(${p.id})">${img}${esc(p.name)}</div>`;
+  }).join('');
+}
+
+function selectPlaylist(id) {
+  S.selectedPlaylist = id;
+  renderPlaylistTabs();
+  renderDashKeywords();
+  loadFollowerChart(id);
+}
+
+function renderDashKeywords() {
+  const container = el('dash-keywords');
+  const market    = el('dash-kw-market');
+  market.textContent = S.market || 'All Markets';
+
+  let rows = S.rankings.filter(r => r.playlist_id === S.selectedPlaylist);
+  if (S.market) rows = rows.filter(r => r.market === S.market);
+  rows = rows.sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
+
+  if (!rows.length) { container.innerHTML = '<div class="panel-empty">No ranking data yet.<br>Run a crawl to get started.</div>'; return; }
+
+  container.innerHTML = rows.slice(0, 10).map(r => `
+    <div class="rank-row">
+      <span class="kw-term">${esc(r.term)}</span>
+      <span class="kw-mkt">${esc(r.market)}</span>
+      ${posBadge(r.position)}
+    </div>
+  `).join('');
+}
+
+async function renderDashAlerts() {
+  const container = el('dash-alerts');
+  const cnt       = el('dash-alerts-count');
+  try {
+    const alerts = await api('/api/alerts');
+    S.dashAlerts = alerts;
+    const recent = alerts.slice(0, 6);
+    cnt.textContent = alerts.length ? `${alerts.length} total` : '';
+    if (!recent.length) { container.innerHTML = '<div class="panel-empty">No alerts yet.</div>'; return; }
+    container.innerHTML = recent.map(a => `
+      <div class="alert-row">
+        <div class="alert-dot ${esc(a.type)}"></div>
+        <div>
+          <div class="alert-msg">${esc(a.message)}</div>
+          <div class="alert-meta">${esc(a.term)} · ${esc(a.market)} · ${timeAgo(a.created_at)}</div>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    container.innerHTML = '<div class="panel-empty">Could not load alerts.</div>';
+  }
+}
+
+// ── Follower chart ────────────────────────────────────────────────
+async function loadFollowerChart(playlistId) {
+  try {
+    const data = await api(`/api/followers/${playlistId}`);
+    const labels = data.map(d => d.date);
+    const values = data.map(d => d.followers);
+
+    if (S.chart) { S.chart.destroy(); S.chart = null; }
+
+    const ctx = el('follower-chart').getContext('2d');
+    S.chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Followers',
+          data: values,
+          borderColor: '#1db954',
+          backgroundColor: 'rgba(29,185,84,0.07)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: data.length < 30 ? 3 : 0,
+          pointHoverRadius: 5,
+          pointBackgroundColor: '#1db954',
+          borderWidth: 2,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0f0f0f',
+            titleColor: '#a3a3a3',
+            bodyColor: '#ffffff',
+            padding: 10,
+            callbacks: {
+              label: ctx => ' ' + fmtNum(ctx.parsed.y) + ' followers',
+            },
+          },
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: '#a3a3a3', font: { size: 11, family: 'Geist, Inter, sans-serif' }, maxTicksLimit: 7 },
+            border: { display: false },
+          },
+          y: {
+            grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
+            ticks: {
+              color: '#a3a3a3',
+              font: { size: 11, family: 'Geist, Inter, sans-serif' },
+              callback: v => fmtNum(v),
+            },
+            border: { display: false },
+          },
+        },
+      },
+    });
+  } catch(e) {
+    // no data yet — chart stays blank
+  }
+}
+
+// ── Rankings ──────────────────────────────────────────────────────
+function renderRankings() {
+  let rows = [...S.rankings];
+  if (S.market) rows = rows.filter(r => r.market === S.market);
+
+  const tbody = el('rankings-tbody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--ink3)">No ranking data yet. Add playlists + keywords, then run a crawl.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td><strong style="font-weight:500">${esc(r.term)}</strong></td>
+      <td>
+        <div class="td-playlist">
+          ${artOrFallback(r.image_url, r.playlist_name, 28)}
+          <div>
+            <div class="td-name">${esc(r.playlist_name)}</div>
+            ${r.label ? `<div class="td-label">${esc(r.label)}</div>` : ''}
+          </div>
+        </div>
+      </td>
+      <td><span class="badge-mkt">${esc(r.market)}</span></td>
+      <td>${posBadge(r.position)}</td>
+      <td>${deltaBadge(r.position, r.prev_position)}</td>
+    </tr>
+  `).join('');
+}
+
+// ── Export CSV ────────────────────────────────────────────────────
+function exportCSV() {
+  let rows = [...S.rankings];
+  if (S.market) rows = rows.filter(r => r.market === S.market);
+  const headers = ['Keyword','Market','Playlist','Label','Position','Prev Position','Delta','Followers','Checked At'];
+  const lines = rows.map(r => {
+    const delta = (r.position != null && r.prev_position != null) ? r.prev_position - r.position : '';
+    return [r.term, r.market, r.playlist_name, r.label||'', r.position??'Unranked', r.prev_position??'', delta, r.followers??'', r.checked_at||''];
+  });
+  const csv = [headers, ...lines].map(l => l.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = `rankify-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ── Opportunities ─────────────────────────────────────────────────
+async function loadOpportunities() {
+  const container = el('opp-list');
+  container.innerHTML = `<div class="panel-empty text-muted">Loading…</div>`;
+  try {
+    const opps = await api('/api/opportunities');
+    if (!opps.length) {
+      container.innerHTML = '<div class="panel" style="padding:40px;text-align:center;color:var(--ink3)">No opportunities yet. Run a crawl first.</div>';
+      return;
+    }
+    const icons = { quick_win:'⚡', momentum:'🚀', protect:'🛡', unranked:'🎯' };
+    const labels = { quick_win:'Quick Win', momentum:'Momentum', protect:'Protect', unranked:'Unranked' };
+    container.innerHTML = opps.map(o => `
+      <div class="opp-card">
+        <div class="opp-icon ${esc(o.type)}">${icons[o.type] || '•'}</div>
+        <div class="opp-body">
+          <div class="opp-title">${esc(o.playlist_name)} — <em>${esc(o.term)}</em> in ${esc(o.market)}</div>
+          <div class="opp-desc">${esc(o.msg)}</div>
+          <div class="opp-chips">
+            <span class="opp-chip type-${esc(o.type)}">${labels[o.type] || o.type}</span>
+            ${o.position != null ? `<span class="opp-chip">Rank #${o.position}</span>` : ''}
+            ${o.improvement > 0 ? `<span class="opp-chip">↑${o.improvement} this week</span>` : ''}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    container.innerHTML = `<div class="panel-empty" style="color:var(--red)">Failed to load opportunities.</div>`;
+  }
+}
+
+// ── Alerts ────────────────────────────────────────────────────────
+async function loadAlerts() {
+  const container = el('alerts-list');
+  container.innerHTML = `<div class="panel-empty text-muted">Loading…</div>`;
+  try {
+    const alerts = await api('/api/alerts');
+    if (!alerts.length) { container.innerHTML = '<div class="panel-empty">No alerts yet.</div>'; return; }
+    container.innerHTML = alerts.map(a => `
+      <div class="alert-row">
+        <div class="alert-dot ${esc(a.type)}"></div>
+        <div style="flex:1">
+          <div class="alert-msg">${esc(a.message)}</div>
+          <div class="alert-meta">${esc(a.playlist_name)} · ${esc(a.term)} · ${esc(a.market)} · ${timeAgo(a.created_at)}</div>
+        </div>
+        ${!a.seen ? '<div style="width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0;margin-top:5px"></div>' : ''}
+      </div>
+    `).join('');
+  } catch(e) {
+    container.innerHTML = `<div class="panel-empty" style="color:var(--red)">Failed to load alerts.</div>`;
+  }
+}
+
+async function markAlertsSeen() {
+  try {
+    await api('/api/alerts/seen', { method: 'POST' });
+    S.stats.unseen_alerts = 0;
+    updateAlertBadge();
+    loadAlerts();
+    showToast('All alerts marked as read');
+  } catch(e) {
+    showToast('Failed to mark alerts', 'error');
+  }
+}
+
+// ── Playlists ─────────────────────────────────────────────────────
+function renderPlaylists() {
+  const container = el('playlists-list');
+  if (!S.playlists.length) {
+    container.innerHTML = '<div class="panel-empty">No playlists yet. Click "Add Playlist" to get started.</div>';
+    return;
+  }
+  container.innerHTML = S.playlists.map(p => `
+    <div class="pl-row">
+      ${p.image_url
+        ? `<img class="pl-art" src="${esc(p.image_url)}" loading="lazy" onerror="this.replaceWith(this.nextSibling)" />`
+        : `<div class="pl-art-fb">${(p.name||'?')[0].toUpperCase()}</div>`}
+      <div class="pl-info">
+        <div class="pl-name">${esc(p.name)}</div>
+        <div class="pl-meta">${esc(p.owner||'')}${p.followers ? ' · ' + fmtNum(p.followers) + ' followers' : ''}${p.label ? ' · ' + p.label : ''}</div>
+      </div>
+      <div class="pl-actions">
+        ${p.label ? `<span class="label-badge">${esc(p.label)}</span>` : ''}
+        <a class="ext-link" href="https://open.spotify.com/playlist/${esc(p.spotify_id)}" target="_blank" rel="noopener">Open ↗</a>
+        <button class="btn sm danger" onclick="removePlaylist(${p.id})">Remove</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function addPlaylist() {
+  const btn = el('pl-add-btn');
+  const spotifyUrl = el('pl-url').value.trim();
+  const label      = el('pl-label').value.trim();
+  const notes      = el('pl-notes').value.trim();
+  if (!spotifyUrl) { showToast('Please enter a Spotify URL', 'error'); return; }
+  btn.disabled = true;
+  btn.textContent = 'Adding…';
+  try {
+    const pl = await api('/api/playlists', {
+      method: 'POST',
+      body: JSON.stringify({ spotifyUrl, label, notes }),
+    });
+    S.playlists.unshift(pl);
+    if (!S.selectedPlaylist) S.selectedPlaylist = pl.id;
+    S.stats.playlists = (S.stats.playlists || 0) + 1;
+    updateStatsCards();
+    renderPlaylists();
+    closeModal('modal-playlist');
+    el('pl-url').value = '';
+    el('pl-label').value = '';
+    el('pl-notes').value = '';
+    showToast(`"${pl.name}" added`);
+  } catch(e) {
+    showToast(e.message || 'Failed to add playlist', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Add Playlist';
+  }
+}
+
+async function removePlaylist(id) {
+  if (!confirm('Remove this playlist and all its ranking history?')) return;
+  try {
+    await api(`/api/playlists/${id}`, { method: 'DELETE' });
+    S.playlists = S.playlists.filter(p => p.id !== id);
+    S.rankings  = S.rankings.filter(r => r.playlist_id !== id);
+    if (S.selectedPlaylist === id) S.selectedPlaylist = S.playlists[0]?.id || null;
+    S.stats.playlists = Math.max(0, (S.stats.playlists || 1) - 1);
+    updateStatsCards();
+    renderPlaylists();
+    showToast('Playlist removed');
+  } catch(e) {
+    showToast('Failed to remove playlist', 'error');
+  }
+}
+
+// ── Keywords ──────────────────────────────────────────────────────
+function renderKeywords() {
+  const container = el('keywords-list');
+  if (!S.keywords.length) {
+    container.innerHTML = '<div class="text-muted" style="padding:8px 0">No keywords yet. Use the form above to add one.</div>';
+    return;
+  }
+  const grouped = {};
+  for (const k of S.keywords) (grouped[k.market] = grouped[k.market] || []).push(k);
+  container.innerHTML = Object.keys(grouped).sort().map(mkt => `
+    <div class="kw-group">
+      <div class="kw-group-label">${esc(mkt)}</div>
+      <div class="kw-tags">
+        ${grouped[mkt].map(k => `
+          <div class="kw-tag">
+            ${esc(k.term)}
+            <button class="kw-remove" title="Remove" onclick="removeKeyword(${k.id})">✕</button>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+async function addKeyword() {
+  const term   = el('kw-input').value.trim();
+  const market = el('kw-market').value;
+  if (!term) { showToast('Enter a keyword term', 'error'); return; }
+  try {
+    const kw = await api('/api/keywords', { method: 'POST', body: JSON.stringify({ term, market }) });
+    if (!S.keywords.find(k => k.term === kw.term && k.market === kw.market)) {
+      S.keywords.push(kw);
+    }
+    S.stats.keywords = S.keywords.length;
+    updateStatsCards();
+    populateMarketFilter();
+    renderKeywords();
+    el('kw-input').value = '';
+    showToast(`"${term}" added to ${market}`);
+  } catch(e) {
+    showToast(e.message || 'Failed to add keyword', 'error');
+  }
+}
+
+async function removeKeyword(id) {
+  try {
+    await api(`/api/keywords/${id}`, { method: 'DELETE' });
+    S.keywords = S.keywords.filter(k => k.id !== id);
+    S.rankings = S.rankings.filter(r => r.keyword_id !== id);
+    S.stats.keywords = S.keywords.length;
+    updateStatsCards();
+    populateMarketFilter();
+    renderKeywords();
+    showToast('Keyword removed');
+  } catch(e) {
+    showToast('Failed to remove keyword', 'error');
+  }
+}
+
+// ── Settings ──────────────────────────────────────────────────────
+function renderSettings() {
+  const notionEl = el('settings-notion-status');
+  if (S.notionConnected) {
+    notionEl.className = 'status-dot ok';
+    notionEl.textContent = 'Connected';
+  } else {
+    notionEl.className = 'status-dot warn';
+    notionEl.textContent = 'Not connected';
+  }
+  updateLastSync();
+}
+
+// ── Notion ────────────────────────────────────────────────────────
+async function testAndSaveNotion() {
+  const token = el('notion-token').value.trim();
+  const dbId  = el('notion-db-id').value.trim();
+  if (!token || !dbId) { showToast('Enter both token and database ID', 'error'); return; }
+  const btn = el('notion-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Testing…';
+  try {
+    const result = await api('/api/notion/test', { method: 'POST', body: JSON.stringify({ token, dbId }) });
+    if (!result.ok) throw new Error('Connection failed');
+    // save to server settings
+    await api('/api/settings', { method: 'POST', body: JSON.stringify({ key: 'notion_token', value: token }) });
+    await api('/api/settings', { method: 'POST', body: JSON.stringify({ key: 'notion_db_id', value: dbId }) });
+    S.notionConnected = true;
+    localStorage.setItem('notion_connected', 'true');
+    updateNotionPill();
+    closeModal('modal-notion');
+    showToast(`Connected to "${result.title}"`);
+    if (S.view === 'settings') renderSettings();
+  } catch(e) {
+    showToast('Notion connection failed — check your token and database ID', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Test & Save';
+  }
+}
+
+async function notionSync() {
+  const btn = el('notion-sync-btn');
+  btn.disabled = true;
+  btn.textContent = 'Syncing…';
+  try {
+    const r = await api('/api/notion/sync', { method: 'POST' });
+    showToast(`Notion sync started (${r.rows} rows)`);
+  } catch(e) {
+    showToast('Notion sync failed', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sync Now';
+  }
+}
+
+// ── Crawl ─────────────────────────────────────────────────────────
+async function triggerCrawl() {
+  const btn = el('crawl-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div>Running…';
+  try {
+    await api('/api/crawl/now', { method: 'POST' });
+    showToast('Crawl started — rankings will update shortly');
+  } catch(e) {
+    showToast('Failed to trigger crawl', 'error');
+  }
+
+  // re-fetch after 20s
+  setTimeout(async () => {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1A5.5 5.5 0 111 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M1 2.5V1h1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Run Crawl`;
+    await loadAll();
+    if (S.view === 'dashboard') renderDashboard();
+    if (S.view === 'rankings')  renderRankings();
+    updateLastSync();
+    showToast('Rankings updated');
+  }, 20000);
+}
+
+// ── Boot ──────────────────────────────────────────────────────────
+init().catch(console.error);
+</script>
+</body>
+</html>
