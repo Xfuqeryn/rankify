@@ -121,6 +121,26 @@ async function initDB() {
     );
   `);
 
+  // Session 7 — Market Intelligence Terminal
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS keyword_intel (
+      id             SERIAL PRIMARY KEY,
+      term           TEXT    NOT NULL,
+      market         TEXT    NOT NULL,
+      search_volume  INT     DEFAULT 0,
+      growth_pct     FLOAT   DEFAULT 0,
+      competition    FLOAT   DEFAULT 1.0,
+      traffic_score  INT     DEFAULT 0,
+      total_followers BIGINT DEFAULT 0,
+      top1_followers INT     DEFAULT 0,
+      updated_at     TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(term, market)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_ki_term   ON keyword_intel(term);
+    CREATE INDEX IF NOT EXISTS idx_ki_score  ON keyword_intel(traffic_score DESC);
+  `);
+
   // Seed default target genres if table is empty
   await pool.query(`
     INSERT INTO target_genres (name) VALUES
@@ -539,8 +559,10 @@ async function runCrawl() {
 
     const notionRows = [];
     // ── Metadata cache: spotify_id → { followers, description, contacts }
-    // Prevents redundant API calls when the same playlist appears under multiple keywords.
     const metaCache = new Map();
+
+    // ── Load Telegram settings once before crawl loop ──
+    const tgSettings = await getTelegramSettings();
 
     // ── Heartbeat: log every 30s so Render logs confirm the process is alive ──
     heartbeat = setInterval(() => {
@@ -658,6 +680,27 @@ async function runCrawl() {
                 [playlist.id, kw.id, `Dropped ${Math.abs(diff)} spots to #${position}`]
               );
             }
+
+            // ── Telegram: Top-15 entry alert ──────────────────────────────
+            const tier = TIER1.includes(kw.market) ? 'T1' : TIER2.includes(kw.market) ? 'T2' : TIER3.includes(kw.market) ? 'T3' : null;
+            if (
+              tier &&
+              tgSettings.chatId &&
+              !tgSettings.excludedCountries.has(kw.market) &&
+              position <= 15 &&
+              (prevPos === null || prevPos > 15)
+            ) {
+              const tMsg = [
+                `🎯 <b>Top 15 Entry</b>`,
+                ``,
+                `📋 <b>${playlist.name}</b>`,
+                `🔑 Keyword: <i>${kw.term}</i>`,
+                `🌍 Market: ${kw.market} (${tier})`,
+                `📊 Position: #${position}${prevPos ? ` (was #${prevPos})` : ''}`,
+                `👥 Followers: ${(followerMap[playlist.id] || 0).toLocaleString()}`,
+              ].join('\n');
+              sendTelegramAlert(tgSettings.chatId, tMsg).catch(() => {});
+            }
           }
 
           notionRows.push({ playlist_name: playlist.name, term: kw.term, market: kw.market, position, followers });
@@ -708,6 +751,46 @@ async function runCrawl() {
 
     if (process.env.NOTION_TOKEN && process.env.NOTION_DATABASE_ID) {
       syncToNotion(notionRows).catch(e => console.error('[notion]', e.message));
+    }
+
+    // ── 8. Keyword Intel enrichment (background — doesn't block sync done) ──
+    syncState.current = 'Enriching keyword intelligence…';
+    const { rows: apikeyRow } = await pool.query(
+      `SELECT value FROM settings WHERE key='playlistranking_api_key'`
+    ).catch(() => ({ rows: [] }));
+    const prApiKey = apikeyRow[0]?.value || null;
+
+    // Only enrich manual + recently-used keywords to stay within API rate limits
+    const { rows: enrichTargets } = await pool.query(`
+      SELECT DISTINCT k.term, k.market
+      FROM keywords k
+      WHERE k.source != 'master_sync' OR k.id IN (
+        SELECT DISTINCT keyword_id FROM rank_history
+        WHERE checked_at > NOW() - INTERVAL '24 hours'
+        LIMIT 100
+      )
+      LIMIT 200
+    `).catch(() => ({ rows: [] }));
+
+    for (const { term, market } of enrichTargets) {
+      try {
+        await sleep(150);
+        const intel = await enrichKeywordIntel(term, market, prApiKey);
+        await pool.query(`
+          INSERT INTO keyword_intel (term, market, search_volume, growth_pct, competition, traffic_score, total_followers, top1_followers, updated_at)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
+          ON CONFLICT (term, market) DO UPDATE
+            SET search_volume  = EXCLUDED.search_volume,
+                growth_pct     = EXCLUDED.growth_pct,
+                competition    = EXCLUDED.competition,
+                traffic_score  = EXCLUDED.traffic_score,
+                total_followers = EXCLUDED.total_followers,
+                top1_followers = EXCLUDED.top1_followers,
+                updated_at     = NOW()
+        `, [term, market, intel.searchVolume, intel.growthPct, intel.competition, intel.trafficScore, intel.totalFollowers, intel.top1Followers]);
+      } catch (e) {
+        console.error(`[intel] enrich ${term}/${market}:`, e.message);
+      }
     }
 
     console.log(`[sync] Master Sync complete — ${allKeywords.length} keywords across ${Object.keys(byMarket).length} markets`);
@@ -789,6 +872,134 @@ async function syncToNotion(rows) {
       console.error('[notion] row error:', e.message);
     }
   }
+}
+
+// ─── Telegram Alerts ─────────────────────────────────────────────────────────
+
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8710985939:AAGM8ocBOQ3VmuIBXlMjNYr7iP5MgPG0gVE';
+
+async function sendTelegramAlert(chatId, message) {
+  if (!chatId) return;
+  try {
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    const res = await fetch(url, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' }),
+    });
+    const data = await res.json();
+    if (!data.ok) console.error('[telegram] send failed:', data.description);
+    return data;
+  } catch (e) {
+    console.error('[telegram] error:', e.message);
+  }
+}
+
+async function getTelegramSettings() {
+  try {
+    const { rows } = await pool.query(
+      `SELECT key, value FROM settings WHERE key IN ('telegram_chat_id', 'telegram_excluded_countries')`
+    );
+    const out = {};
+    for (const r of rows) out[r.key] = r.value;
+    return {
+      chatId:           out.telegram_chat_id || null,
+      excludedCountries: new Set((out.telegram_excluded_countries || '').split(',').map(s => s.trim().toUpperCase()).filter(Boolean)),
+    };
+  } catch { return { chatId: null, excludedCountries: new Set() }; }
+}
+
+// ─── PlaylistRankings API Enrichment ─────────────────────────────────────────
+
+async function enrichKeywordIntel(term, market, apiKey) {
+  // Synthetic baseline derived from curator_snapshots (always available)
+  let searchVolume = 0;
+  let growthPct    = 0;
+  let competition  = 1.0;
+  let totalFollowers = 0;
+  let top1Followers  = 0;
+
+  try {
+    // Compute from our own data first
+    const { rows: snaps } = await pool.query(`
+      SELECT cs.followers, cs.position,
+        k.market
+      FROM curator_snapshots cs
+      JOIN keywords k ON k.id = cs.keyword_id
+      WHERE LOWER(k.term) = LOWER($1) AND k.market = $2
+        AND cs.position <= 20
+      ORDER BY cs.position ASC
+    `, [term, market]);
+
+    if (snaps.length) {
+      totalFollowers = snaps.reduce((s, r) => s + (Number(r.followers) || 0), 0);
+      top1Followers  = Number(snaps.find(r => r.position === 1)?.followers) || 0;
+      // Synthetic search volume: geometric mean of total followers / 10
+      searchVolume   = Math.round(Math.sqrt(totalFollowers / Math.max(snaps.length, 1)) * 2.5);
+      // Competition density: fraction of top-10 playlists with >50k followers
+      const heavyHitters = snaps.filter(r => r.position <= 10 && (r.followers || 0) > 50000).length;
+      competition = Math.max(0.1, heavyHitters / Math.max(snaps.filter(r => r.position <= 10).length, 1));
+    }
+
+    // Growth % from rank_history for this keyword
+    const { rows: hist } = await pool.query(`
+      SELECT
+        MAX(followers) AS peak,
+        MIN(followers) AS floor,
+        COUNT(DISTINCT DATE(checked_at)) AS days
+      FROM rank_history rh
+      JOIN keywords k ON k.id = rh.keyword_id
+      WHERE LOWER(k.term) = LOWER($1) AND k.market = $2
+        AND rh.position IS NOT NULL
+        AND rh.checked_at > NOW() - INTERVAL '30 days'
+    `, [term, market]);
+    if (hist[0] && hist[0].floor > 0 && hist[0].peak > hist[0].floor) {
+      growthPct = Math.round(((hist[0].peak - hist[0].floor) / hist[0].floor) * 100);
+    }
+  } catch (e) {
+    console.error(`[intel] baseline ${term}/${market}:`, e.message);
+  }
+
+  // Try PlaylistRankings API if key provided
+  if (apiKey) {
+    try {
+      const apiRes = await fetch(
+        `https://api.playlistranking.com/v1/keywords?q=${encodeURIComponent(term)}&market=${market}`,
+        { headers: { Authorization: `Bearer ${apiKey}` }, timeout: 8000 }
+      );
+      if (apiRes.ok) {
+        const apiData = await apiRes.json();
+        // Merge API data — expect { search_volume, growth_pct, competition }
+        if (apiData.search_volume != null) searchVolume = apiData.search_volume;
+        if (apiData.growth_pct    != null) growthPct    = apiData.growth_pct;
+        if (apiData.competition   != null) competition  = apiData.competition;
+      }
+    } catch (e) {
+      // API unreachable or wrong key — silently fall back to synthetic data
+    }
+  }
+
+  // Traffic Score (1–100): high volume + high growth + low competition = top score
+  const rawScore = (searchVolume * (1 + Math.max(growthPct, 0) / 100)) / Math.max(competition, 0.1);
+  const trafficScore = Math.min(100, Math.max(1, Math.round(rawScore / 50)));
+
+  return { searchVolume, growthPct, competition, trafficScore, totalFollowers, top1Followers };
+}
+
+// ─── Valuation 2.0 helper (5-Year ROI Formula) ───────────────────────────────
+
+function calcValuation2(followers, position, market) {
+  const f = Number(followers) || 0;
+  const p = Number(position)  || 10;
+  // Est. monthly streams ≈ followers × 0.15 (conservative listener-to-stream ratio)
+  const estMonthlyStreams = f * 0.15;
+  // Tier bonus
+  const tierMult = TIER1.includes(market) ? 1.3 : TIER2.includes(market) ? 1.1 : 0.9;
+  // Rank bonus
+  const rankMult = p <= 1 ? 1.6 : p <= 3 ? 1.3 : p <= 5 ? 1.1 : 1.0;
+  // Base: per-stream revenue × 12 months × 5 years
+  const base = Math.round(estMonthlyStreams * 0.0025 * 12 * 5 * tierMult * rankMult);
+  return { low: Math.round(base * 0.75), mid: base, high: Math.round(base * 1.25) };
 }
 
 // daily 06:00 UTC
@@ -1477,7 +1688,22 @@ app.get('/api/acquisition', async (req, res) => {
           k.market,
           cs.checked_at,
           ROUND(((6 - cs.position) * 15.0) + GREATEST(0, (5000 - COALESCE(cs.followers,0))::float / 100)) AS opportunity_score,
-          ROUND(((11.0 - cs.position) * 100.0) / SQRT(GREATEST(cs.followers, 100)))::int AS yield_score
+          ROUND(((11.0 - cs.position) * 100.0) / SQRT(GREATEST(cs.followers, 100)))::int AS yield_score,
+          -- Valuation 2.0: (Est Monthly Streams × $0.0025 × 12 × 5) × tier × rank
+          ROUND(
+            (COALESCE(cs.followers,0) * 0.15 * 0.0025 * 12 * 5)
+            * CASE k.market
+                WHEN 'US' THEN 1.3 WHEN 'GB' THEN 1.3 WHEN 'DE' THEN 1.3
+                WHEN 'FR' THEN 1.1 WHEN 'NL' THEN 1.1 WHEN 'BR' THEN 1.1
+                ELSE 0.9
+              END
+            * CASE
+                WHEN cs.position = 1  THEN 1.6
+                WHEN cs.position <= 3 THEN 1.3
+                WHEN cs.position <= 5 THEN 1.1
+                ELSE 1.0
+              END
+          ) AS val_mid
         FROM curator_snapshots cs
         JOIN keywords k ON k.id = cs.keyword_id
         WHERE cs.position BETWEEN 1 AND 10
@@ -1488,6 +1714,8 @@ app.get('/api/acquisition', async (req, res) => {
       )
       SELECT
         l.*,
+        ROUND(l.val_mid * 0.75)  AS val_low,
+        ROUND(l.val_mid * 1.25)  AS val_high,
         COALESCE(ac.status, 'New')                                       AS crm_status,
         COALESCE(ac.notes, '')                                            AS crm_notes,
         (
@@ -1547,6 +1775,249 @@ app.get('/api/leads', async (req, res) => {
     `);
     res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Keyword Discovery endpoint ────────────────────────────────────────────────
+
+app.get('/api/discovery', async (req, res) => {
+  try {
+    const { market, tracked_only } = req.query;
+
+    const params = [];
+    let marketCond = '';
+    if (market) { params.push(market); marketCond = `AND k.market = $${params.length}`; }
+
+    let trackedCond = '';
+    if (tracked_only === 'true') {
+      trackedCond = `AND k.source != 'master_sync'`;
+    }
+
+    const { rows } = await pool.query(`
+      WITH snap_stats AS (
+        SELECT
+          k.term,
+          k.market,
+          COUNT(cs.id)                                                              AS playlist_count,
+          SUM(cs.followers)                                                         AS total_followers,
+          MAX(cs.followers) FILTER (WHERE cs.position = 1)                         AS top1_followers,
+          ROUND(AVG(cs.followers) FILTER (WHERE cs.position <= 10))                AS avg_top10_followers,
+          BOOL_OR(k.source IS DISTINCT FROM 'master_sync')                         AS is_tracked
+        FROM curator_snapshots cs
+        JOIN keywords k ON k.id = cs.keyword_id
+        WHERE cs.checked_at > NOW() - INTERVAL '7 days'
+          ${marketCond} ${trackedCond}
+        GROUP BY k.term, k.market
+      ),
+      with_intel AS (
+        SELECT
+          ss.*,
+          COALESCE(ki.search_volume,  ROUND(SQRT(GREATEST(ss.total_followers::float / GREATEST(ss.playlist_count,1), 0)) * 2.5)::int)  AS search_volume,
+          COALESCE(ki.growth_pct,     0)                          AS growth_pct,
+          COALESCE(ki.competition,    1.0)                        AS competition,
+          COALESCE(ki.traffic_score,  1)                          AS traffic_score,
+          ki.updated_at                                           AS intel_updated_at
+        FROM snap_stats ss
+        LEFT JOIN keyword_intel ki ON ki.term = ss.term AND ki.market = ss.market
+      )
+      SELECT * FROM with_intel
+      ORDER BY traffic_score DESC, total_followers DESC NULLS LAST
+      LIMIT 500
+    `, params);
+
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Trending Keywords endpoint (replaces market share on dashboard) ────────────
+
+app.get('/api/trending-keywords', async (req, res) => {
+  try {
+    const { market, tracked_only, limit: lim } = req.query;
+    const limitN = Math.min(parseInt(lim) || 20, 100);
+
+    const params = [];
+    let mkt = '';
+    if (market) { params.push(market); mkt = `AND k.market = $${params.length}`; }
+    let trackedCond = '';
+    if (tracked_only === 'true') trackedCond = `AND k.source != 'master_sync'`;
+    params.push(limitN);
+    const limitParam = `$${params.length}`;
+
+    const { rows } = await pool.query(`
+      WITH current AS (
+        SELECT DISTINCT ON (rh.playlist_id, rh.keyword_id)
+          rh.keyword_id, rh.position, rh.followers, rh.checked_at
+        FROM rank_history rh
+        JOIN keywords k ON k.id = rh.keyword_id
+        WHERE rh.position IS NOT NULL ${mkt} ${trackedCond}
+        ORDER BY rh.playlist_id, rh.keyword_id, rh.checked_at DESC
+      ),
+      week_ago AS (
+        SELECT DISTINCT ON (rh.playlist_id, rh.keyword_id)
+          rh.keyword_id, rh.followers AS old_followers
+        FROM rank_history rh
+        JOIN keywords k ON k.id = rh.keyword_id
+        WHERE rh.position IS NOT NULL
+          AND rh.checked_at <= NOW() - INTERVAL '6 days'
+          ${mkt} ${trackedCond}
+        ORDER BY rh.playlist_id, rh.keyword_id, rh.checked_at DESC
+      )
+      SELECT
+        k.term,
+        k.market,
+        ROUND(AVG(c.position), 1)                                     AS avg_position,
+        SUM(c.followers)                                               AS total_followers,
+        CASE
+          WHEN SUM(COALESCE(w.old_followers, 0)) > 0
+          THEN ROUND(((SUM(c.followers) - SUM(COALESCE(w.old_followers, c.followers)))::float
+                       / NULLIF(SUM(COALESCE(w.old_followers, c.followers)), 0)) * 100, 1)
+          ELSE 0
+        END                                                            AS growth_pct_7d,
+        COALESCE(ki.traffic_score, 1)                                  AS traffic_score,
+        COALESCE(ki.search_volume, 0)                                  AS search_volume,
+        COUNT(DISTINCT c.keyword_id)                                   AS entry_count
+      FROM current c
+      JOIN keywords k  ON k.id = c.keyword_id
+      LEFT JOIN week_ago w  ON w.keyword_id = c.keyword_id
+      LEFT JOIN keyword_intel ki ON ki.term = k.term AND ki.market = k.market
+      GROUP BY k.term, k.market, ki.traffic_score, ki.search_volume
+      ORDER BY traffic_score DESC, growth_pct_7d DESC, total_followers DESC
+      LIMIT ${limitParam}
+    `, params);
+
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Gap-to-#1 Analysis ────────────────────────────────────────────────────────
+
+app.get('/api/gap-analysis', async (req, res) => {
+  try {
+    const { market } = req.query;
+    const params  = [];
+    let mktCond = '';
+    if (market) { params.push(market); mktCond = `AND k.market = $${params.length}`; }
+
+    // Get all tracked playlists + their current positions and top-1 competitor data
+    const { rows } = await pool.query(`
+      WITH latest AS (
+        SELECT DISTINCT ON (rh.playlist_id, rh.keyword_id)
+          rh.playlist_id, rh.keyword_id,
+          rh.position, rh.followers, rh.checked_at
+        FROM rank_history rh
+        JOIN keywords k ON k.id = rh.keyword_id
+        WHERE rh.position IS NOT NULL ${mktCond}
+        ORDER BY rh.playlist_id, rh.keyword_id, rh.checked_at DESC
+      ),
+      growth AS (
+        SELECT
+          rh.playlist_id,
+          ROUND(
+            (MAX(rh.followers) - MIN(rh.followers))::float /
+            NULLIF(EXTRACT(days FROM MAX(rh.checked_at) - MIN(rh.checked_at)), 0) * 30
+          ) AS monthly_follower_growth
+        FROM rank_history rh
+        WHERE rh.checked_at > NOW() - INTERVAL '30 days'
+          AND rh.followers > 0
+        GROUP BY rh.playlist_id
+      ),
+      top1 AS (
+        SELECT DISTINCT ON (cs.keyword_id)
+          cs.keyword_id,
+          cs.followers  AS top1_followers,
+          cs.owner      AS top1_owner,
+          cs.playlist_name AS top1_name
+        FROM curator_snapshots cs
+        WHERE cs.position = 1
+          AND cs.spotify_id NOT IN (SELECT spotify_id FROM playlists)
+        ORDER BY cs.keyword_id, cs.checked_at DESC
+      )
+      SELECT
+        p.name        AS playlist_name,
+        p.id          AS playlist_id,
+        k.term,
+        k.market,
+        l.position    AS current_position,
+        l.followers   AS current_followers,
+        COALESCE(g.monthly_follower_growth, 0) AS monthly_growth,
+        t.top1_followers,
+        t.top1_owner,
+        t.top1_name,
+        GREATEST(0, COALESCE(t.top1_followers, 0) - COALESCE(l.followers, 0))  AS gap,
+        CASE
+          WHEN COALESCE(g.monthly_follower_growth, 0) > 0
+          THEN ROUND(GREATEST(0, COALESCE(t.top1_followers, 0) - COALESCE(l.followers, 0))
+               / g.monthly_follower_growth)
+          ELSE NULL
+        END AS months_to_catch
+      FROM latest l
+      JOIN playlists p  ON p.id  = l.playlist_id
+      JOIN keywords  k  ON k.id  = l.keyword_id
+      LEFT JOIN growth g ON g.playlist_id = l.playlist_id
+      LEFT JOIN top1   t ON t.keyword_id  = l.keyword_id
+      WHERE l.position > 1
+        AND p.is_competitor = FALSE
+      ORDER BY l.position ASC, gap DESC
+      LIMIT 100
+    `, params);
+
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Telegram test endpoint ────────────────────────────────────────────────────
+
+app.post('/api/telegram/test', async (req, res) => {
+  try {
+    const { chatId } = req.body;
+    if (!chatId) return res.status(400).json({ error: 'chatId required' });
+    const result = await sendTelegramAlert(chatId,
+      `✅ <b>Rankify connected!</b>\n\nYour Telegram alerts are configured. You'll be notified when your playlists enter the Top 15 in any tracked market.`
+    );
+    if (result?.ok) {
+      await pool.query(
+        `INSERT INTO settings (key,value) VALUES ('telegram_chat_id',$1) ON CONFLICT (key) DO UPDATE SET value=$1`,
+        [chatId]
+      );
+      res.json({ ok: true });
+    } else {
+      res.json({ ok: false, error: result?.description || 'Unknown error' });
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Manual keyword intel refresh ──────────────────────────────────────────────
+
+app.post('/api/intel/refresh', async (req, res) => {
+  const { term, market } = req.body;
+  if (!term || !market) return res.status(400).json({ error: 'term and market required' });
+  try {
+    const { rows: kr } = await pool.query(
+      `SELECT value FROM settings WHERE key='playlistranking_api_key'`
+    );
+    const apiKey = kr[0]?.value || null;
+    const intel = await enrichKeywordIntel(term, market, apiKey);
+    await pool.query(`
+      INSERT INTO keyword_intel (term, market, search_volume, growth_pct, competition, traffic_score, total_followers, top1_followers, updated_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
+      ON CONFLICT (term, market) DO UPDATE
+        SET search_volume=EXCLUDED.search_volume, growth_pct=EXCLUDED.growth_pct,
+            competition=EXCLUDED.competition, traffic_score=EXCLUDED.traffic_score,
+            total_followers=EXCLUDED.total_followers, top1_followers=EXCLUDED.top1_followers,
+            updated_at=NOW()
+    `, [term, market, intel.searchVolume, intel.growthPct, intel.competition, intel.trafficScore, intel.totalFollowers, intel.top1Followers]);
+    res.json({ ok: true, intel });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // Trigger crawl

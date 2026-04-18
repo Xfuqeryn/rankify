@@ -1220,6 +1220,132 @@
     /* ── GPU compositing for smooth animations ────────────────── */
     .sidebar, .topbar, .modal-box { will-change: transform; transform: translateZ(0); }
 
+    /* ── Trending keyword rows (replaces market-share) ────────── */
+    .trending-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 16px; border-bottom: 0.5px solid var(--border);
+      transition: background 0.1s;
+    }
+    .trending-row:last-child { border-bottom: none; }
+    .trending-row:hover { background: var(--surface2); }
+    .trending-rank {
+      width: 22px; font-family: var(--ff-serif); font-size: 14px;
+      color: var(--ink3); text-align: right; flex-shrink: 0;
+    }
+    .trending-term { flex: 1; font-size: 13px; font-weight: 500; color: var(--ink); min-width: 0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .trending-growth {
+      font-size: 11.5px; font-weight: 700; white-space: nowrap;
+    }
+    .trending-growth.up   { color: var(--green); }
+    .trending-growth.down { color: var(--red); }
+    .trending-growth.flat { color: var(--ink3); }
+    .traffic-bar {
+      width: 50px; height: 3px; background: var(--surface3);
+      border-radius: 2px; overflow: hidden; flex-shrink: 0;
+    }
+    .traffic-fill { height: 100%; background: var(--blue); border-radius: 2px; }
+
+    /* ── Discovery table (Liquid Glass) ──────────────────────── */
+    .discovery-table {
+      width: 100%; border-collapse: collapse;
+    }
+    .discovery-table th {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+      text-transform: uppercase; color: var(--ink3);
+      padding: 10px 16px; text-align: left;
+      border-bottom: 0.5px solid var(--border);
+      background: var(--surface);
+      position: sticky; top: 0; z-index: 2;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .discovery-table td {
+      padding: 10px 16px; border-bottom: 0.5px solid var(--border);
+      font-size: 13px; color: var(--ink);
+    }
+    .discovery-table tr:last-child td { border-bottom: none; }
+    .discovery-table tbody tr:hover td {
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(4px);
+    }
+    .discovery-table th.sortable { cursor: pointer; user-select: none; }
+    .discovery-table th.sortable:hover { color: var(--ink2); }
+
+    /* Traffic score pill */
+    .traffic-score {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 12px; font-weight: 700;
+      padding: 2px 8px; border-radius: 6px;
+    }
+    .traffic-score.s-high { background: var(--green-bg);  color: var(--green); }
+    .traffic-score.s-med  { background: var(--amber-bg);  color: var(--amber); }
+    .traffic-score.s-low  { background: var(--surface3);  color: var(--ink3); }
+
+    /* Search volume */
+    .search-vol {
+      font-size: 12px; font-weight: 600; color: var(--ink2);
+    }
+
+    /* Growth % in discovery */
+    .growth-cell {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 12.5px; font-weight: 700;
+    }
+    .growth-cell.up   { color: var(--green); }
+    .growth-cell.dn   { color: var(--red); }
+    .growth-cell.flat { color: var(--ink3); }
+
+    /* ── Gap to #1 badge ─────────────────────────────────────── */
+    .gap-badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 10px; font-weight: 600; padding: 2px 6px;
+      border-radius: 4px; white-space: nowrap;
+    }
+    .gap-badge.near { background: var(--amber-bg); color: var(--amber); }
+    .gap-badge.far  { background: var(--surface3);  color: var(--ink3); }
+    .gap-badge.top  { background: var(--green-bg);  color: var(--green); }
+
+    /* ── Valuation range display ─────────────────────────────── */
+    .val-range {
+      display: flex; flex-direction: column; gap: 1px;
+    }
+    .val-mid {
+      font-size: 13px; font-weight: 700; color: var(--green);
+      font-family: var(--ff-serif);
+    }
+    .val-bounds {
+      font-size: 10px; color: var(--ink3);
+    }
+
+    /* ── Auto-flag badge (Top 1-2 fast growth) ───────────────── */
+    .autoflag {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 9px; font-weight: 700; letter-spacing: 0.04em;
+      padding: 2px 5px; border-radius: 3px;
+      background: linear-gradient(135deg, var(--green-bg), var(--blue-bg));
+      color: var(--green); border: 0.5px solid rgba(29,185,84,0.25);
+    }
+
+    /* ── Only-Tracked toggle ─────────────────────────────────── */
+    .tracked-toggle {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: var(--rpill);
+      border: 0.5px solid var(--border2);
+      background: var(--surface2); color: var(--ink2);
+      font-size: 12px; font-weight: 500; font-family: var(--ff-ui);
+      cursor: pointer; transition: all 0.12s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tracked-toggle.active {
+      background: var(--ink); color: var(--surface);
+      border-color: var(--ink);
+    }
+    .tracked-toggle-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: currentColor; flex-shrink: 0;
+    }
+
     /* ── Bottom navigation bar (mobile only) ──────────────────── */
     .bottom-nav {
       display: none;
@@ -1612,6 +1738,10 @@
 
   <div class="nav-section" style="margin-top:8px">
     <div class="nav-section-label">Intel</div>
+    <div class="nav-item" data-view="discovery" onclick="navigate('discovery')">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 9.5l1.5-2 1.5 1 1.5-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Discovery
+    </div>
     <div class="nav-item" data-view="trends" onclick="navigate('trends')">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1 11l4-4 3 2 5-6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Trends
@@ -1719,7 +1849,7 @@
         <div class="panel-body" id="dash-scout-list"></div>
       </div>
 
-      <!-- Bottom row: follower growth + market share -->
+      <!-- Bottom row: follower growth + trending keywords -->
       <div class="dash-bottom">
         <!-- Follower chart -->
         <div class="chart-wrap" style="margin-top:0">
@@ -1734,18 +1864,15 @@
           </div>
         </div>
 
-        <!-- Market share -->
-        <div class="chart-wrap" style="margin-top:0">
-          <div class="chart-header">
-            <div>
-              <div class="chart-title">Market Share</div>
-              <div class="chart-sub">Top 10 rankings</div>
-            </div>
+        <!-- Top Trending Keywords (replaces market share pie) -->
+        <div class="panel" style="margin-top:0">
+          <div class="panel-header" style="gap:8px">
+            <span class="panel-title">🔥 Trending Keywords</span>
+            <button class="tracked-toggle" id="tracked-toggle" onclick="toggleTrackedOnly()" title="Show only manually-tracked keywords">
+              <span class="tracked-toggle-dot"></span>Tracked only
+            </button>
           </div>
-          <div class="chart-canvas-wrap" style="height:140px;display:flex;align-items:center;justify-content:center">
-            <canvas id="market-share-chart"></canvas>
-          </div>
-          <div class="market-share-legend" id="market-share-legend"></div>
+          <div class="panel-body" id="dash-trending"></div>
         </div>
       </div>
     </div>
@@ -1919,6 +2046,48 @@
         <div class="settings-row">
           <span class="settings-row-label">Status</span>
           <span class="status-dot ok" id="settings-spotify-status">Active</span>
+        </div>
+      </div>
+
+      <!-- PlaylistRankings API -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div class="settings-section-title">PlaylistRankings API</div>
+          <div class="settings-section-sub">Enriches search volume &amp; global keyword trends in Discovery view</div>
+        </div>
+        <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:8px">
+          <span class="settings-row-label">API Key</span>
+          <div style="display:flex;gap:8px">
+            <input class="input" id="pr-api-key" type="password" placeholder="sk-…" style="flex:1" />
+            <button class="btn primary" onclick="savePRApiKey()">Save</button>
+          </div>
+          <span style="font-size:11.5px;color:var(--ink3)">Get your key at <strong>playlistranking.com</strong>. Without a key, traffic scores use our synthetic model.</span>
+        </div>
+      </div>
+
+      <!-- Telegram Alerts -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div class="settings-section-title">Telegram Alerts</div>
+          <div class="settings-section-sub">Get notified when playlists enter Top 15 in T1/T2/T3 markets</div>
+        </div>
+        <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:8px">
+          <span class="settings-row-label">Your Telegram Chat ID</span>
+          <div style="display:flex;gap:8px">
+            <input class="input" id="tg-chat-id" placeholder="e.g. 123456789" style="flex:1" />
+            <button class="btn primary" id="tg-test-btn" onclick="testTelegram()">Test &amp; Save</button>
+          </div>
+          <span style="font-size:11.5px;color:var(--ink3)">Start a chat with <strong>@userinfobot</strong> on Telegram to get your Chat ID. The bot token is pre-configured.</span>
+        </div>
+        <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:8px">
+          <span class="settings-row-label">Exclude Countries from Alerts</span>
+          <input class="input" id="tg-excluded" placeholder="e.g. TR, ID, PH" />
+          <span style="font-size:11.5px;color:var(--ink3)">Comma-separated market codes to suppress alerts for (e.g. low-priority Tier 3 markets).</span>
+          <button class="btn sm" style="align-self:flex-start" onclick="saveExcludedCountries()">Save Exclusions</button>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">Alert status</span>
+          <span class="status-dot" id="tg-status">Not configured</span>
         </div>
       </div>
     </div>
@@ -2130,6 +2299,59 @@
           </table>
           <!-- Mobile card view (shown on ≤767px) -->
           <div id="acq-cards"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DISCOVERY ─────────────────────────────────────────────── -->
+    <div class="view" data-view="discovery" id="view-discovery">
+      <div class="flex-between section-gap" style="flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Keyword Discovery</div>
+          <div class="text-muted" style="margin-top:3px">Traffic Score, Search Volume &amp; Growth — Artist.tools style</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="tracked-toggle" id="disc-tracked-toggle" onclick="toggleDiscTracked()">
+            <span class="tracked-toggle-dot"></span>Tracked only
+          </button>
+          <select class="select" id="disc-market-filter" style="width:100px" onchange="loadDiscovery()">
+            <option value="">All Markets</option>
+            <optgroup label="Tier 1"><option value="US">US</option><option value="GB">GB</option><option value="DE">DE</option></optgroup>
+            <optgroup label="Tier 2"><option value="FR">FR</option><option value="NL">NL</option><option value="BR">BR</option></optgroup>
+            <optgroup label="Tier 3"><option value="TR">TR</option><option value="ID">ID</option><option value="PH">PH</option><option value="VN">VN</option></optgroup>
+          </select>
+          <input class="input" id="disc-search" placeholder="Filter keywords…" style="width:160px" oninput="renderDiscovery()" />
+          <span class="filter-count" id="disc-count"></span>
+        </div>
+      </div>
+
+      <!-- Gap-to-#1 panel -->
+      <div class="panel section-gap" id="gap-panel" style="display:none">
+        <div class="panel-header">
+          <span class="panel-title">📐 Gap to #1 — Stream Velocity</span>
+          <span class="panel-meta">Months needed at current growth rate to overtake top playlist</span>
+        </div>
+        <div class="panel-body" id="gap-list"></div>
+      </div>
+
+      <!-- Discovery table -->
+      <div class="panel">
+        <div class="panel-body" style="overflow-x:auto">
+          <table class="discovery-table">
+            <thead>
+              <tr>
+                <th class="sortable" onclick="sortDiscovery('term')">#&nbsp; Keyword</th>
+                <th class="sortable hide-mobile" onclick="sortDiscovery('market')">Market</th>
+                <th class="sortable" onclick="sortDiscovery('traffic_score')">Traffic Score <span class="sort-icon active" id="disc-sort-icon">↓</span></th>
+                <th class="sortable hide-mobile" onclick="sortDiscovery('search_volume')">Search Vol</th>
+                <th class="sortable" onclick="sortDiscovery('growth_pct')">Growth %</th>
+                <th class="sortable hide-mobile" onclick="sortDiscovery('total_followers')">Total Followers</th>
+                <th class="hide-mobile">Competition</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="disc-tbody"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -2429,7 +2651,7 @@ function navigate(view) {
     dashboard:'Dashboard', rankings:'Rankings', opportunities:'Opportunities',
     alerts:'Alerts', playlists:'Playlists', keywords:'Keywords', settings:'Settings',
     trends:'Trends', 'market-map':'Market Map', leads:'Lead CRM',
-    acquisition:'Acquisition Scout', genres:'Target Genres',
+    acquisition:'Acquisition Scout', genres:'Target Genres', discovery:'Keyword Discovery',
   };
   el('page-title').textContent = titles[view] || view;
   // Scroll content area to top on navigate
@@ -2441,12 +2663,13 @@ function navigate(view) {
   if (view === 'alerts')        loadAlerts();
   if (view === 'playlists')     renderPlaylists();
   if (view === 'keywords')      { renderKeywords(); loadSeasonalSuggestions(); }
-  if (view === 'settings')      renderSettings();
+  if (view === 'settings')      { renderSettings(); loadSettingsData(); }
   if (view === 'trends')        loadTrends();
   if (view === 'market-map')    loadMarketMap();
   if (view === 'leads')         loadLeads();
   if (view === 'acquisition')   loadAcquisition();
   if (view === 'genres')        loadGenres();
+  if (view === 'discovery')     loadDiscovery();
 }
 
 // ── Init ─────────────────────────────────────────────────────────
@@ -2536,7 +2759,7 @@ async function renderDashboard() {
   renderDashKeywords();
   renderDashAlerts();
   if (S.selectedPlaylist) loadFollowerChart(S.selectedPlaylist);
-  loadMarketShareChart();
+  loadTrendingKeywords();
   loadScoutAlerts();
 }
 
@@ -3438,8 +3661,11 @@ function renderAcquisition() {
     const trees      = ci.linktrees  || [];
     const hasContact = emails.length || igs.length || trees.length;
 
-    const price    = calcMarketPrice(r.followers, r.position, r.market);
+    const valLow   = Number(r.val_low)  || 0;
+    const valMid   = Number(r.val_mid)  || 0;
+    const valHigh  = Number(r.val_high) || 0;
     const isHot    = score >= 60 && hasContact && (r.followers || 0) < 3000;
+    const autoFlag = Number(r.position) <= 2 && hasContact && Number(r.yield_score) >= 40;
     const risks    = S.riskMap[r.spotify_id] || [];
 
     const actBtns = [];
@@ -3465,6 +3691,7 @@ function renderAcquisition() {
               <div class="td-name" style="max-width:130px">${esc(r.playlist_name || '—')}</div>
               <div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap;align-items:center">
                 ${isHot ? '<span class="hot-asset-label">🔥 Hot Asset</span>' : ''}
+                ${autoFlag ? '<span class="autoflag">⚡ Auto-Flag</span>' : ''}
                 ${hasContact ? '<span style="font-size:10px;color:var(--green);font-weight:600">● contact</span>' : ''}
                 ${r.is_dormant ? '<span class="dormant-chip">💤 Dormant</span>' : ''}
               </div>
@@ -3478,7 +3705,7 @@ function renderAcquisition() {
         <td>${posBadge(r.position)}</td>
         <td class="hide-mobile">
           <div class="text-muted" style="font-size:12.5px">${fmtNum(r.followers)}</div>
-          <div class="price-tag${isHot ? ' arb' : ''}" style="font-size:11px;margin-top:2px">${fmtPrice(price)}</div>
+          ${valMid > 0 ? `<div class="val-range" style="margin-top:3px"><span class="val-bounds">${fmtPrice(valLow)}</span><span class="val-mid">${fmtPrice(valMid)}</span><span class="val-bounds">${fmtPrice(valHigh)}</span></div>` : ''}
         </td>
         <td class="hide-mobile">
           <div class="yield-bar">
@@ -3520,6 +3747,7 @@ function renderAcquisition() {
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;align-items:center">
           ${isHot ? '<span class="hot-asset-label">🔥 Hot Asset</span>' : ''}
+          ${autoFlag ? '<span class="autoflag">⚡ Auto-Flag</span>' : ''}
           ${sonicProfile(r.genre)}
           ${riskBadge(r.spotify_id, risks)}
           ${r.is_dormant ? '<span class="dormant-chip">💤 Dormant</span>' : ''}
@@ -3527,9 +3755,9 @@ function renderAcquisition() {
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <div>
-            <div style="font-size:11px;color:var(--ink3)">Followers</div>
+            <div style="font-size:11px;color:var(--ink3)">Followers · 5yr ROI</div>
             <div style="font-size:13px;font-weight:600">${fmtNum(r.followers)}</div>
-            <div class="price-tag${isHot ? ' arb' : ''}">${fmtPrice(price)}</div>
+            ${valMid > 0 ? `<div class="val-range"><span class="val-bounds">${fmtPrice(valLow)}</span><span class="val-mid">${fmtPrice(valMid)}</span><span class="val-bounds">${fmtPrice(valHigh)}</span></div>` : ''}
           </div>
           <div style="text-align:right">
             <div style="font-size:11px;color:var(--ink3)">Score</div>
@@ -3922,6 +4150,274 @@ function appendSeasonal(suffix) {
   input.value   = current ? `${current} ${suffix}` : suffix;
   input.focus();
   showToast(`"${suffix}" appended to keyword`);
+}
+
+// ── Trending Keywords (Dashboard) ────────────────────────────────
+S.trackedOnly = false;
+
+async function loadTrendingKeywords() {
+  const container = el('dash-trending');
+  if (!container) return;
+  container.innerHTML = '<div class="panel-empty" style="padding:20px 0">Loading…</div>';
+  try {
+    const params = new URLSearchParams();
+    if (S.market) params.set('market', S.market);
+    if (S.trackedOnly) params.set('tracked_only', 'true');
+    const data = await api('/api/trending-keywords?' + params);
+    renderTrendingKeywords(data);
+  } catch(e) {
+    container.innerHTML = '<div class="panel-empty">Could not load trending keywords.</div>';
+  }
+}
+
+function renderTrendingKeywords(data) {
+  const container = el('dash-trending');
+  if (!container) return;
+  if (!data || !data.length) {
+    container.innerHTML = '<div class="panel-empty">No keyword intel yet — run a crawl to populate trends.</div>';
+    return;
+  }
+  container.innerHTML = data.slice(0, 10).map((k, i) => {
+    const growth = Number(k.growth_pct_7d) || 0;
+    const growthDir = growth > 5 ? 'up' : growth < -5 ? 'dn' : 'flat';
+    const growthIcon = growthDir === 'up' ? '▲' : growthDir === 'dn' ? '▼' : '—';
+    const score = Number(k.traffic_score) || 0;
+    const scoreLevel = score >= 60 ? 's-high' : score >= 30 ? 's-med' : 's-low';
+    return `
+      <div class="trending-row" onclick="navigate('discovery')" style="cursor:pointer">
+        <span class="trending-rank">${i + 1}</span>
+        <span class="trending-term">${esc(k.term)}</span>
+        <span class="kw-mkt" style="font-size:11px">${esc(k.market)}</span>
+        <span class="growth-cell ${growthDir}">${growthIcon} ${Math.abs(growth).toFixed(0)}%</span>
+        <div class="traffic-bar" title="Traffic Score: ${score}/100">
+          <div class="traffic-fill" style="width:${score}%"></div>
+        </div>
+        <span class="traffic-score ${scoreLevel}">${score}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleTrackedOnly() {
+  S.trackedOnly = !S.trackedOnly;
+  const btn = el('tracked-toggle');
+  if (btn) btn.classList.toggle('active', S.trackedOnly);
+  loadTrendingKeywords();
+}
+
+// ── Discovery view ───────────────────────────────────────────────
+S.discovery   = [];
+S.discTracked = false;
+S.discSort    = { key: 'traffic_score', dir: -1 };
+
+async function loadDiscovery() {
+  const tbody = el('disc-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--ink3)">Loading…</td></tr>`;
+  try {
+    const params = new URLSearchParams();
+    const mkt = el('disc-market-filter')?.value;
+    if (mkt) params.set('market', mkt);
+    const [discData, gapData] = await Promise.all([
+      api('/api/discovery?' + params),
+      api('/api/gap-analysis?' + params),
+    ]);
+    S.discovery = discData || [];
+    renderDiscovery();
+    renderGapPanel(gapData || []);
+    el('disc-count').textContent = `${S.discovery.length} keyword${S.discovery.length !== 1 ? 's' : ''}`;
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--red)">Failed to load discovery data.</td></tr>`;
+  }
+}
+
+function renderDiscovery() {
+  const tbody = el('disc-tbody');
+  if (!tbody) return;
+  const q = (el('disc-search')?.value || '').toLowerCase();
+
+  let rows = [...S.discovery];
+  if (q) rows = rows.filter(r => (r.term || '').toLowerCase().includes(q));
+  if (S.discTracked) rows = rows.filter(r => r.is_tracked);
+
+  const { key, dir } = S.discSort;
+  rows.sort((a, b) => {
+    if (key === 'term') return (a[key] || '').localeCompare(b[key] || '') * dir;
+    return ((Number(a[key]) || 0) - (Number(b[key]) || 0)) * dir;
+  });
+
+  const iconEl = el('disc-sort-icon');
+  if (iconEl) iconEl.textContent = dir === -1 ? '↓' : '↑';
+  el('disc-count').textContent = `${rows.length} keyword${rows.length !== 1 ? 's' : ''}`;
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--ink3)">No keywords found${q ? ` matching "${esc(q)}"` : ''}. Run a crawl to populate intel.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map((r, i) => {
+    const score = Number(r.traffic_score) || 0;
+    const scoreLevel = score >= 60 ? 's-high' : score >= 30 ? 's-med' : 's-low';
+    const growth = Number(r.growth_pct) || 0;
+    const growthDir = growth > 5 ? 'up' : growth < -5 ? 'dn' : 'flat';
+    const growthIcon = growthDir === 'up' ? '▲' : growthDir === 'dn' ? '▼' : '—';
+    const comp = Number(r.competition) || 0;
+    const compLabel = comp < 0.4 ? 'Low' : comp < 0.7 ? 'Medium' : 'High';
+    const compClass = comp < 0.4 ? 'low' : comp < 0.7 ? 'med' : 'high';
+    const sv = Number(r.search_volume) || 0;
+    const svLabel = sv >= 1000 ? (sv / 1000).toFixed(1) + 'K' : (sv || '—');
+    return `
+      <tr>
+        <td style="font-weight:500">
+          <span style="color:var(--ink3);font-size:11px;margin-right:6px">${i + 1}</span>
+          ${esc(r.term)}
+          ${r.is_tracked ? '<span style="font-size:9px;color:var(--green);font-weight:700;margin-left:5px" title="Manually tracked">●</span>' : ''}
+        </td>
+        <td class="hide-mobile"><span class="badge-mkt">${esc(r.market || '—')}</span></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="traffic-bar" style="width:56px" title="Traffic Score ${score}/100">
+              <div class="traffic-fill" style="width:${score}%"></div>
+            </div>
+            <span class="traffic-score ${scoreLevel}">${score}</span>
+          </div>
+        </td>
+        <td class="hide-mobile" style="color:var(--ink2);font-size:12.5px">${svLabel}</td>
+        <td><span class="growth-cell ${growthDir}">${growthIcon} ${Math.abs(growth).toFixed(0)}%</span></td>
+        <td class="hide-mobile" style="font-size:12.5px;color:var(--ink2)">${fmtNum(r.total_followers || 0)}</td>
+        <td class="hide-mobile">
+          <span class="priority-badge ${compClass}" style="font-size:11px">${compLabel}</span>
+        </td>
+        <td>
+          <button class="btn sm" onclick="refreshIntel('${esc(r.term)}','${esc(r.market || '')}')" title="Re-enrich this keyword">↻</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function sortDiscovery(key) {
+  if (S.discSort.key === key) {
+    S.discSort.dir *= -1;
+  } else {
+    S.discSort = { key, dir: key === 'term' ? 1 : -1 };
+  }
+  renderDiscovery();
+}
+
+function toggleDiscTracked() {
+  S.discTracked = !S.discTracked;
+  const btn = el('disc-tracked-toggle');
+  if (btn) btn.classList.toggle('active', S.discTracked);
+  renderDiscovery();
+}
+
+// ── Gap-to-#1 Panel ──────────────────────────────────────────────
+function renderGapPanel(data) {
+  const panel = el('gap-panel');
+  const list  = el('gap-list');
+  if (!panel || !list) return;
+  const valid = (data || []).filter(r => r.gap > 0);
+  if (!valid.length) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  list.innerHTML = valid.slice(0, 8).map(r => {
+    const months = r.months_to_catch;
+    const gapClass = !months ? 'top' : months < 6 ? 'near' : 'far';
+    const gapLabel = !months
+      ? 'No growth data'
+      : months < 1
+        ? '< 1mo away'
+        : `${months.toFixed(1)} months to catch`;
+    return `
+      <div class="trending-row" style="align-items:flex-start;padding:10px 0">
+        <div style="flex:1;min-width:0">
+          <div class="trending-term" style="max-width:200px">${esc(r.playlist_name || '—')}</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:2px">${esc(r.term || '')} · ${esc(r.market || '')}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:12px;color:var(--ink2)">Gap: ${fmtNum(r.gap || 0)}</div>
+          <span class="gap-badge ${gapClass}">${gapLabel}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function refreshIntel(term, market) {
+  try {
+    showToast('Refreshing intel…');
+    await api('/api/intel/refresh', { method: 'POST', body: JSON.stringify({ term, market }) });
+    showToast('Intel refreshed ✓', 'success');
+    loadDiscovery();
+  } catch(e) {
+    showToast('Refresh failed', 'error');
+  }
+}
+
+// ── Settings Data Load / Save ────────────────────────────────────
+async function loadSettingsData() {
+  try {
+    const settings = await api('/api/settings').catch(() => ({}));
+    const prInput = el('pr-api-key');
+    if (prInput && settings.playlistranking_api_key) {
+      prInput.value = '';
+      prInput.placeholder = '●●●●●●●●●● (configured)';
+    }
+    const chatInput = el('tg-chat-id');
+    if (chatInput && settings.telegram_chat_id) chatInput.value = settings.telegram_chat_id;
+    const exInput = el('tg-excluded');
+    if (exInput && settings.telegram_excluded_countries) exInput.value = settings.telegram_excluded_countries;
+    const dot = el('tg-status');
+    if (dot && settings.telegram_chat_id) {
+      dot.className = 'status-dot ok';
+      dot.textContent = 'Configured';
+    }
+  } catch(e) { /* silently skip */ }
+}
+
+async function savePRApiKey() {
+  const val = el('pr-api-key')?.value.trim();
+  if (!val) { showToast('Enter an API key', 'error'); return; }
+  try {
+    await api('/api/settings', { method: 'POST', body: JSON.stringify({ key: 'playlistranking_api_key', value: val }) });
+    const input = el('pr-api-key');
+    if (input) { input.value = ''; input.placeholder = '●●●●●●●●●● (configured)'; }
+    showToast('PlaylistRankings key saved ✓', 'success');
+  } catch(e) {
+    showToast('Failed to save key', 'error');
+  }
+}
+
+async function testTelegram() {
+  const chatId = el('tg-chat-id')?.value.trim();
+  if (!chatId) { showToast('Enter your Telegram chat ID', 'error'); return; }
+  const btn = el('tg-test-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  const dot = el('tg-status');
+  try {
+    const result = await api('/api/telegram/test', { method: 'POST', body: JSON.stringify({ chatId }) });
+    if (result.ok) {
+      if (dot) { dot.className = 'status-dot ok'; dot.textContent = 'Configured — test sent ✓'; }
+      showToast('Telegram test sent ✓', 'success');
+    } else {
+      throw new Error(result.error || 'Send failed');
+    }
+  } catch(e) {
+    showToast('Telegram test failed — check your chat ID', 'error');
+    if (dot) { dot.className = 'status-dot warn'; dot.textContent = 'Test failed'; }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Test & Save'; }
+  }
+}
+
+async function saveExcludedCountries() {
+  const val = (el('tg-excluded')?.value || '').trim();
+  try {
+    await api('/api/settings', { method: 'POST', body: JSON.stringify({ key: 'telegram_excluded_countries', value: val }) });
+    showToast('Exclusions saved ✓', 'success');
+  } catch(e) {
+    showToast('Failed to save exclusions', 'error');
+  }
 }
 
 // ── Boot ──────────────────────────────────────────────────────────
