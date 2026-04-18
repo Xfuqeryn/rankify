@@ -13,6 +13,38 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
 
+    /* ── Login Gate ───────────────────────────────────────────── */
+    #login-gate {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--surface2);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #login-gate.hidden { display: none; }
+    .login-box {
+      background: var(--surface);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--rlg);
+      padding: 40px 36px;
+      width: 340px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+    }
+    .login-logo {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 28px;
+    }
+    .login-logo .logo-icon { width:32px; height:32px; font-size:18px; }
+    .login-title {
+      font-family: var(--ff-serif); font-size: 22px; letter-spacing: -0.3px;
+      color: var(--ink); margin-bottom: 4px;
+    }
+    .login-sub { font-size: 13px; color: var(--ink3); margin-bottom: 24px; }
+    .login-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .login-label { font-size: 12px; font-weight: 500; color: var(--ink2); }
+    .login-error {
+      font-size: 12px; color: var(--red); margin-top: 8px;
+      text-align: center; min-height: 16px;
+    }
+
     :root {
       --ink:      #0f0f0f;
       --ink2:     #525252;
@@ -1327,6 +1359,130 @@
       color: var(--green); border: 0.5px solid rgba(29,185,84,0.25);
     }
 
+    /* ── Dashboard module grid ────────────────────────────────── */
+    .dash-module-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .dash-module { min-width: 0; }
+    .dash-module.full-width { grid-column: 1 / -1; }
+    .dash-module.hidden-module { display: none; }
+    @media (max-width: 900px) { .dash-module-grid { grid-template-columns: 1fr; } }
+
+    /* Dashboard customize bar */
+    .dash-customize-bar {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      margin-bottom: 14px; padding: 10px 14px;
+      background: var(--surface); border: 0.5px solid var(--border2);
+      border-radius: var(--r);
+    }
+    .dash-customize-bar.hidden { display: none; }
+    .module-toggle-btn {
+      padding: 4px 10px; border-radius: var(--rpill); border: 1px solid var(--border2);
+      background: var(--surface3); color: var(--ink2); font-size: 12px; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .module-toggle-btn.active { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+
+    /* ── Rankings two-view ─────────────────────────────────────── */
+    .view-toggle {
+      display: flex; border: 0.5px solid var(--border2); border-radius: var(--r);
+      overflow: hidden;
+    }
+    .view-toggle-btn {
+      padding: 5px 14px; font-size: 12.5px; font-weight: 500;
+      border: none; background: none; color: var(--ink3); cursor: pointer;
+      transition: all 0.12s;
+    }
+    .view-toggle-btn.active { background: var(--ink); color: var(--surface); }
+
+    .grouped-playlist-card {
+      border: 0.5px solid var(--border); border-radius: var(--r);
+      margin-bottom: 12px; overflow: hidden;
+    }
+    .grouped-playlist-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; background: var(--surface);
+      border-bottom: 0.5px solid var(--border); cursor: pointer;
+    }
+    .grouped-kw-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 14px; border-bottom: 0.5px solid var(--border);
+      font-size: 13px;
+    }
+    .grouped-kw-row:last-child { border-bottom: none; }
+    .change-badge {
+      display: inline-flex; align-items: center; gap: 2px;
+      font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 4px;
+    }
+    .change-badge.up   { background: var(--green-bg); color: var(--green); }
+    .change-badge.down { background: var(--red-bg);   color: var(--red); }
+    .change-badge.new  { background: var(--blue-bg);  color: var(--blue); }
+    .change-badge.flat { background: var(--surface3); color: var(--ink3); }
+
+    /* ── Monitor / Watchlist ───────────────────────────────────── */
+    .monitor-card {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 16px; border-bottom: 0.5px solid var(--border);
+    }
+    .monitor-card:last-child { border-bottom: none; }
+    .flag-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: var(--rpill); font-size: 11px; font-weight: 600;
+    }
+    .flag-pill.zero-engage { background: var(--red-bg);   color: var(--red); }
+    .flag-pill.growth-spike { background: var(--amber-bg); color: var(--amber); }
+    .flag-pill.watched      { background: var(--blue-bg);  color: var(--blue); }
+
+    /* ── Seasonal cards ────────────────────────────────────────── */
+    .seasonal-card {
+      border: 0.5px solid var(--border); border-radius: var(--r);
+      padding: 16px 18px; margin-bottom: 14px;
+    }
+    .seasonal-card-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+    }
+    .seasonal-icon { font-size: 24px; }
+    .seasonal-name { font-size: 15px; font-weight: 600; color: var(--ink); }
+    .seasonal-meta { font-size: 12px; color: var(--ink3); }
+    .trend-badge {
+      margin-left: auto; background: var(--green-bg); color: var(--green);
+      font-size: 12px; font-weight: 700; padding: 2px 8px;
+      border-radius: var(--rpill);
+    }
+    .seasonal-kw-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: var(--rpill);
+      border: 0.5px solid var(--border2); font-size: 12px; color: var(--ink2);
+      margin: 3px; cursor: pointer; transition: background 0.1s;
+    }
+    .seasonal-kw-chip:hover { background: var(--surface3); }
+    .seasonal-kw-chip.tracked { border-color: var(--green); color: var(--green); }
+
+    /* ── Daily Report ──────────────────────────────────────────── */
+    .report-section { margin-bottom: 20px; }
+    .report-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0; border-bottom: 0.5px solid var(--border); font-size: 13px;
+    }
+    .report-row:last-child { border-bottom: none; }
+    .report-rank {
+      width: 22px; text-align: center; font-size: 11px;
+      font-weight: 700; color: var(--ink3);
+    }
+    .report-name { flex: 1; font-weight: 500; }
+    .report-gain { font-size: 12px; font-weight: 700; color: var(--green); }
+
+    /* ── Valuation 3.0 tier badge ──────────────────────────────── */
+    .tier-badge {
+      display: inline-flex; font-size: 10px; font-weight: 700; padding: 1px 5px;
+      border-radius: 3px; letter-spacing: 0.04em;
+    }
+    .tier-badge.t1 { background: var(--green-bg); color: var(--green); }
+    .tier-badge.t2 { background: var(--amber-bg); color: var(--amber); }
+    .tier-badge.t3 { background: var(--surface3); color: var(--ink3); }
+
     /* ── Only-Tracked toggle ─────────────────────────────────── */
     .tracked-toggle {
       display: inline-flex; align-items: center; gap: 6px;
@@ -1683,6 +1839,32 @@
 <body>
 
 <!-- ──────────────────────────────────────────────────────────────
+     LOGIN GATE
+─────────────────────────────────────────────────────────────── -->
+<div id="login-gate">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="logo-icon">R</div>
+      <span style="font-family:var(--ff-serif);font-size:18px">Rank<em style="font-style:italic;color:var(--green)">ify</em></span>
+    </div>
+    <div class="login-title">Sign in</div>
+    <div class="login-sub">Market Intelligence Terminal — restricted access</div>
+    <div class="login-field">
+      <label class="login-label">Username</label>
+      <input class="input" id="login-user" type="text" placeholder="Administrator" autocomplete="username"
+        onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <div class="login-field">
+      <label class="login-label">Password</label>
+      <input class="input" id="login-pass" type="password" placeholder="••••••••"
+        autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <button class="btn primary" id="login-btn" style="width:100%;margin-top:4px" onclick="doLogin()">Sign in</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────
      SIDEBAR
 ─────────────────────────────────────────────────────────────── -->
 <aside class="sidebar">
@@ -1746,9 +1928,17 @@
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1 11l4-4 3 2 5-6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Trends
     </div>
+    <div class="nav-item" data-view="seasonal" onclick="navigate('seasonal')">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1v2M7.5 12v2M1 7.5h2M12 7.5h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="7.5" cy="7.5" r="3" stroke="currentColor" stroke-width="1.3"/></svg>
+      Seasonal
+    </div>
     <div class="nav-item" data-view="market-map" onclick="navigate('market-map')">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M5 1.5v12M10 1.5v12M1.5 5h12M1.5 10h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       Market Map
+    </div>
+    <div class="nav-item" data-view="monitor" onclick="navigate('monitor')">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1.5 3.5h12v7a1 1 0 01-1 1h-10a1 1 0 01-1-1v-7z" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 11.5v2M9.5 11.5v2M3.5 13.5h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="7.5" cy="7" r="1.5" stroke="currentColor" stroke-width="1.3"/></svg>
+      Monitor
     </div>
     <div class="nav-item" data-view="leads" onclick="navigate('leads')">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 13c0-3 2.5-4.5 5.5-4.5S13 10 13 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M10.5 7l1 1 2-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1765,12 +1955,15 @@
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1A5.5 5.5 0 111 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M1 2.5V1h1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Master Sync
     </button>
-    <!-- Sync progress bar (shown only while crawl is running) -->
     <div class="sync-wrap" id="sync-wrap">
       <div class="sync-label" id="sync-label">Starting…</div>
       <div class="sync-track"><div class="sync-fill" id="sync-fill"></div></div>
     </div>
     <div class="last-sync-text" id="last-sync">Never synced</div>
+    <button class="btn" id="logout-btn" onclick="doLogout()"
+      style="width:100%;margin-top:8px;font-size:12px;color:var(--ink3);background:none;border:0.5px solid var(--border2)">
+      Sign out
+    </button>
   </div>
 </aside>
 
@@ -1784,11 +1977,16 @@
     <select class="market-pill" id="market-filter" onchange="onMarketChange(this.value)">
       <option value="">All Markets</option>
     </select>
+    <button class="btn sm" onclick="openDailyReport()" title="Daily Report" style="margin-left:auto">
+      📋 Report
+    </button>
+    <button class="btn sm" onclick="toggleDashCustomize()" title="Customize Dashboard">
+      ⚙ Layout
+    </button>
     <div class="notion-pill" id="notion-pill" onclick="openModal('modal-notion')">
       <span class="notion-dot"></span>
       <span id="notion-pill-text">Connect Notion</span>
     </div>
-    <!-- Mobile-only quick sync button -->
     <button class="mobile-sync-btn" id="mobile-sync-btn" onclick="triggerCrawl()" title="Master Sync">
       <svg width="15" height="15" viewBox="0 0 13 13" fill="none"><path d="M6.5 1A5.5 5.5 0 111 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M1 2.5V1h1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -1822,86 +2020,171 @@
       <!-- Playlist tabs -->
       <div class="playlist-tabs" id="playlist-tabs"></div>
 
-      <!-- 2-col -->
-      <div class="two-col">
-        <div class="panel">
-          <div class="panel-header">
-            <span class="panel-title">Top Keywords</span>
-            <span class="panel-meta" id="dash-kw-market"></span>
-          </div>
-          <div class="panel-body" id="dash-keywords"></div>
-        </div>
-        <div class="panel">
-          <div class="panel-header">
-            <span class="panel-title">Recent Alerts</span>
-            <span class="panel-meta" id="dash-alerts-count"></span>
-          </div>
-          <div class="panel-body" id="dash-alerts"></div>
-        </div>
+      <!-- Dashboard customize bar (hidden by default) -->
+      <div class="dash-customize-bar hidden" id="dash-customize-bar">
+        <span style="font-size:12px;font-weight:600;color:var(--ink2);margin-right:6px">Modules:</span>
+        <button class="module-toggle-btn active" data-module="keywords"   onclick="toggleModule('keywords')">Keywords</button>
+        <button class="module-toggle-btn active" data-module="alerts"     onclick="toggleModule('alerts')">Alerts</button>
+        <button class="module-toggle-btn active" data-module="scout"      onclick="toggleModule('scout')">Scout</button>
+        <button class="module-toggle-btn active" data-module="chart"      onclick="toggleModule('chart')">Growth Chart</button>
+        <button class="module-toggle-btn active" data-module="trending"   onclick="toggleModule('trending')">Trending</button>
       </div>
 
-      <!-- Priority Scout Alerts -->
-      <div class="panel section-gap" id="dash-scout-panel" style="display:none">
-        <div class="panel-header">
-          <span class="panel-title">🎯 Priority Scout — Acquisition Alerts</span>
-          <span class="panel-meta">Core-genre playlists ranking top-10 with &lt;5k followers + contact info</span>
+      <!-- Modular grid -->
+      <div class="dash-module-grid" id="dash-module-grid">
+        <!-- Keywords module -->
+        <div class="dash-module" id="module-keywords">
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Top Keywords</span>
+              <span class="panel-meta" id="dash-kw-market"></span>
+            </div>
+            <div class="panel-body" id="dash-keywords"></div>
+          </div>
         </div>
-        <div class="panel-body" id="dash-scout-list"></div>
-      </div>
-
-      <!-- Bottom row: follower growth + trending keywords -->
-      <div class="dash-bottom">
-        <!-- Follower chart -->
-        <div class="chart-wrap" style="margin-top:0">
-          <div class="chart-header">
-            <div>
-              <div class="chart-title">Follower Growth</div>
-              <div class="chart-sub">Last 90 days</div>
+        <!-- Alerts module -->
+        <div class="dash-module" id="module-alerts">
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Recent Alerts</span>
+              <span class="panel-meta" id="dash-alerts-count"></span>
+            </div>
+            <div class="panel-body" id="dash-alerts"></div>
+          </div>
+        </div>
+        <!-- Scout module (full-width, conditionally shown) -->
+        <div class="dash-module full-width" id="module-scout" style="display:none">
+          <div class="panel" id="dash-scout-panel">
+            <div class="panel-header">
+              <span class="panel-title">🎯 Priority Scout — Acquisition Alerts</span>
+              <span class="panel-meta">Core-genre playlists ranking top-10 with &lt;5k followers + contact info</span>
+            </div>
+            <div class="panel-body" id="dash-scout-list"></div>
+          </div>
+        </div>
+        <!-- Chart module -->
+        <div class="dash-module" id="module-chart">
+          <div class="chart-wrap" style="margin-top:0;height:100%">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">Follower Growth</div>
+                <div class="chart-sub">Last 90 days</div>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap">
+              <canvas id="follower-chart"></canvas>
             </div>
           </div>
-          <div class="chart-canvas-wrap">
-            <canvas id="follower-chart"></canvas>
-          </div>
         </div>
-
-        <!-- Top Trending Keywords (replaces market share pie) -->
-        <div class="panel" style="margin-top:0">
-          <div class="panel-header" style="gap:8px">
-            <span class="panel-title">🔥 Trending Keywords</span>
-            <button class="tracked-toggle" id="tracked-toggle" onclick="toggleTrackedOnly()" title="Show only manually-tracked keywords">
-              <span class="tracked-toggle-dot"></span>Tracked only
-            </button>
+        <!-- Trending module -->
+        <div class="dash-module" id="module-trending">
+          <div class="panel" style="height:100%">
+            <div class="panel-header" style="gap:8px">
+              <span class="panel-title">🔥 Trending Keywords</span>
+              <button class="tracked-toggle" id="tracked-toggle" onclick="toggleTrackedOnly()" title="Show only manually-tracked keywords">
+                <span class="tracked-toggle-dot"></span>Tracked only
+              </button>
+            </div>
+            <div class="panel-body" id="dash-trending"></div>
           </div>
-          <div class="panel-body" id="dash-trending"></div>
         </div>
       </div>
     </div>
 
     <!-- ── RANKINGS ──────────────────────────────────────────── -->
     <div class="view" data-view="rankings" id="view-rankings">
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">All Rankings</span>
-          <button class="btn sm" onclick="exportCSV()">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v7M3.5 5.5L6 8l2.5-2.5M1.5 9.5v1a.5.5 0 00.5.5h8a.5.5 0 00.5-.5v-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Export CSV
-          </button>
+      <!-- Header with view toggle + filters -->
+      <div class="flex-between section-gap" style="flex-wrap:wrap;gap:10px">
+        <div class="view-toggle" id="rankings-view-toggle">
+          <button class="view-toggle-btn active" id="rank-list-btn" onclick="switchRankingsView('list')">List</button>
+          <button class="view-toggle-btn" id="rank-grouped-btn" onclick="switchRankingsView('grouped')">By Playlist</button>
         </div>
-        <div class="panel-body">
-          <table class="rankings-table">
-            <thead>
-              <tr>
-                <th>Keyword</th>
-                <th>Playlist</th>
-                <th>Market</th>
-                <th>Position</th>
-                <th>7-Day</th>
-              </tr>
-            </thead>
-            <tbody id="rankings-tbody"></tbody>
-          </table>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input class="input" id="rankings-search" placeholder="Search…" style="width:160px" oninput="renderRankings()" />
+          <select class="select" id="rankings-market-filter" style="width:90px" onchange="renderRankings()">
+            <option value="">Market</option>
+          </select>
+          <select class="select" id="rankings-pos-filter" style="width:110px" onchange="renderRankings()">
+            <option value="">All positions</option>
+            <option value="3">Top 3</option>
+            <option value="10">Top 10</option>
+            <option value="20">Top 20</option>
+          </select>
+          <button class="btn sm" onclick="exportCSV()">↓ CSV</button>
         </div>
       </div>
+
+      <!-- List view -->
+      <div id="rankings-list-view">
+        <div class="panel">
+          <div class="panel-body">
+            <table class="rankings-table">
+              <thead>
+                <tr>
+                  <th>Keyword</th>
+                  <th>Playlist</th>
+                  <th>Market</th>
+                  <th>Position</th>
+                  <th>7d Change</th>
+                  <th>30d Change</th>
+                </tr>
+              </thead>
+              <tbody id="rankings-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grouped view -->
+      <div id="rankings-grouped-view" style="display:none">
+        <div id="rankings-grouped-body"></div>
+      </div>
+    </div>
+
+    <!-- ── MONITOR ──────────────────────────────────────────── -->
+    <div class="view" data-view="monitor" id="view-monitor">
+      <div class="flex-between section-gap" style="flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Suspicious Usage Monitor</div>
+          <div class="text-muted" style="margin-top:3px">High rank + zero engagement flags, plus your custom watchlist</div>
+        </div>
+        <button class="btn sm" onclick="loadMonitor()">↻ Refresh</button>
+      </div>
+      <!-- Flags panel -->
+      <div class="panel section-gap">
+        <div class="panel-header">
+          <span class="panel-title">🚨 Flagged Playlists</span>
+          <span class="panel-meta" id="monitor-count"></span>
+        </div>
+        <div class="panel-body" id="monitor-list"></div>
+      </div>
+      <!-- Watchlist panel -->
+      <div class="panel section-gap">
+        <div class="panel-header">
+          <span class="panel-title">👁 My Watchlist</span>
+          <span class="panel-meta">Manually watched playlists</span>
+        </div>
+        <div class="panel-body">
+          <div style="display:flex;gap:8px;padding:12px 16px;border-bottom:0.5px solid var(--border)">
+            <input class="input" id="watch-id" placeholder="Spotify playlist ID" style="flex:1" />
+            <input class="input" id="watch-name" placeholder="Name (optional)" style="width:160px" />
+            <button class="btn primary" onclick="addToWatchlist()">Watch</button>
+          </div>
+          <div id="watchlist-body"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SEASONAL ──────────────────────────────────────────── -->
+    <div class="view" data-view="seasonal" id="view-seasonal">
+      <div class="flex-between section-gap">
+        <div>
+          <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Seasonal Opportunities</div>
+          <div class="text-muted" id="seasonal-season-label" style="margin-top:3px">Loading seasonal peaks…</div>
+        </div>
+        <button class="btn sm" onclick="loadSeasonal()">↻ Refresh</button>
+      </div>
+      <div id="seasonal-themes"></div>
     </div>
 
     <!-- ── OPPORTUNITIES ─────────────────────────────────────── -->
@@ -2251,15 +2534,25 @@
       <div class="panel">
         <!-- Filter bar -->
         <div class="filter-bar" id="acq-filter-bar">
-          <input class="input" id="acq-search" placeholder="Search playlist or owner…" style="width:180px" oninput="renderAcquisition()" />
+          <input class="input" id="acq-search" placeholder="Search playlist or owner…" style="width:150px" oninput="renderAcquisition()" />
           <button class="fav-only-toggle" id="acq-fav-toggle" onclick="toggleAcqFavOnly()">☆ Starred</button>
-          <select class="select" id="acq-genre-filter" style="width:130px" onchange="renderAcquisition()">
+          <select class="select" id="acq-genre-filter" style="width:120px" onchange="renderAcquisition()">
             <option value="">All Genres</option>
           </select>
-          <select class="select" id="acq-market-filter" style="width:90px" onchange="renderAcquisition()">
-            <option value="">All Markets</option>
+          <select class="select" id="acq-market-filter" style="width:80px" onchange="renderAcquisition()">
+            <option value="">Market</option>
           </select>
-          <select class="select" id="acq-followers-filter" style="width:120px" onchange="renderAcquisition()">
+          <select class="select" id="acq-verified-filter" style="width:130px" onchange="loadAcquisition()">
+            <option value="">All (incl. editorial)</option>
+            <option value="true">Non-editorial only</option>
+            <option value="false">Editorial/Verified</option>
+          </select>
+          <select class="select" id="acq-dm-filter" style="width:120px" onchange="loadAcquisition()">
+            <option value="">All DM status</option>
+            <option value="true">DM info available</option>
+            <option value="false">No DM info</option>
+          </select>
+          <select class="select" id="acq-followers-filter" style="width:110px" onchange="renderAcquisition()">
             <option value="">All Followers</option>
             <option value="0-500">&lt; 500</option>
             <option value="500-1000">500–1k</option>
@@ -2397,6 +2690,20 @@
 <!-- ──────────────────────────────────────────────────────────────
      MODALS
 ─────────────────────────────────────────────────────────────── -->
+
+<!-- Daily Report Modal -->
+<div class="modal-overlay hidden" id="modal-daily-report" onclick="overlayClose(event,'modal-daily-report')">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:680px;width:96vw">
+    <div class="modal-title">📋 Daily Report</div>
+    <div class="modal-sub" id="report-date"></div>
+    <div id="report-body" style="margin-top:16px">
+      <div class="panel-empty">Loading report…</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-daily-report')">Close</button>
+    </div>
+  </div>
+</div>
 
 <!-- Add Playlist -->
 <div class="modal-overlay hidden" id="modal-playlist" onclick="overlayClose(event,'modal-playlist')">
@@ -2571,10 +2878,15 @@ const el  = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 async function api(url, opts = {}) {
+  const token = sessionStorage.getItem('rkfy_token') || '';
   const r = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    },
     ...opts,
   });
+  if (r.status === 401) { doLogout(); throw new Error('Session expired'); }
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data.error || r.statusText);
   return data;
@@ -2652,13 +2964,13 @@ function navigate(view) {
     alerts:'Alerts', playlists:'Playlists', keywords:'Keywords', settings:'Settings',
     trends:'Trends', 'market-map':'Market Map', leads:'Lead CRM',
     acquisition:'Acquisition Scout', genres:'Target Genres', discovery:'Keyword Discovery',
+    monitor:'Monitor', seasonal:'Seasonal Opportunities',
   };
   el('page-title').textContent = titles[view] || view;
-  // Scroll content area to top on navigate
   const contentEl = document.querySelector('.content');
   if (contentEl) contentEl.scrollTop = 0;
   if (view === 'dashboard')     renderDashboard();
-  if (view === 'rankings')      renderRankings();
+  if (view === 'rankings')      loadRankings();
   if (view === 'opportunities') loadOpportunities();
   if (view === 'alerts')        loadAlerts();
   if (view === 'playlists')     renderPlaylists();
@@ -2670,10 +2982,16 @@ function navigate(view) {
   if (view === 'acquisition')   loadAcquisition();
   if (view === 'genres')        loadGenres();
   if (view === 'discovery')     loadDiscovery();
+  if (view === 'monitor')       loadMonitor();
+  if (view === 'seasonal')      loadSeasonal();
 }
 
 // ── Init ─────────────────────────────────────────────────────────
 async function init() {
+  // Check auth
+  const token = sessionStorage.getItem('rkfy_token');
+  if (!token) { el('login-gate').classList.remove('hidden'); return; }
+  el('login-gate').classList.add('hidden');
   updateNotionPill();
   await loadAll();
   navigate('dashboard');
@@ -2727,11 +3045,20 @@ function updateLastSync() {
 
 function populateMarketFilter() {
   const markets = [...new Set(S.keywords.map(k => k.market))].sort();
+  const opts = '<option value="">All Markets</option>' +
+    markets.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('');
   const sel = el('market-filter');
   const curr = sel.value;
-  sel.innerHTML = '<option value="">All Markets</option>' +
-    markets.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('');
+  sel.innerHTML = opts;
   if (curr && markets.includes(curr)) sel.value = curr;
+  // Also populate rankings market filter
+  const rankMkt = el('rankings-market-filter');
+  if (rankMkt) {
+    const currR = rankMkt.value;
+    rankMkt.innerHTML = '<option value="">Market</option>' +
+      markets.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('');
+    if (currR && markets.includes(currR)) rankMkt.value = currR;
+  }
 }
 
 function onMarketChange(val) {
@@ -2755,6 +3082,7 @@ function updateNotionPill() {
 
 // ── Dashboard ────────────────────────────────────────────────────
 async function renderDashboard() {
+  applyModulePrefs();
   renderPlaylistTabs();
   renderDashKeywords();
   renderDashAlerts();
@@ -2949,17 +3277,55 @@ async function loadMarketShareChart() {
 }
 
 // ── Rankings ──────────────────────────────────────────────────────
+S.rankingsView = 'list';
+S.rankingsGrouped = [];
+
+async function loadRankings() {
+  renderRankings();
+  if (S.rankingsView === 'grouped') await loadGroupedRankings();
+}
+
+function switchRankingsView(view) {
+  S.rankingsView = view;
+  el('rankings-list-view').style.display   = view === 'list'    ? '' : 'none';
+  el('rankings-grouped-view').style.display = view === 'grouped' ? '' : 'none';
+  el('rank-list-btn').classList.toggle('active',    view === 'list');
+  el('rank-grouped-btn').classList.toggle('active', view === 'grouped');
+  if (view === 'grouped') loadGroupedRankings();
+}
+
+function changeBadge(pos, prev7, prev30, label7 = '7d', label30 = '30d') {
+  const d7  = prev7  != null ? prev7  - pos : null;
+  const d30 = prev30 != null ? prev30 - pos : null;
+  const badge = (d, label) => {
+    if (d == null)   return `<span class="change-badge new" title="${label}">${label} New</span>`;
+    if (d > 0)       return `<span class="change-badge up"   title="${label}">↑${d}</span>`;
+    if (d < 0)       return `<span class="change-badge down" title="${label}">↓${Math.abs(d)}</span>`;
+    return `<span class="change-badge flat" title="${label}">—</span>`;
+  };
+  return badge(d7, label7) + ' ' + badge(d30, label30);
+}
+
 function renderRankings() {
+  const q      = (el('rankings-search')?.value || '').toLowerCase();
+  const mkt    = el('rankings-market-filter')?.value || '';
+  const maxPos = Number(el('rankings-pos-filter')?.value) || 0;
+
   let rows = [...S.rankings];
   if (S.market) rows = rows.filter(r => r.market === S.market);
+  if (q)        rows = rows.filter(r => (r.term||'').toLowerCase().includes(q) || (r.playlist_name||'').toLowerCase().includes(q));
+  if (mkt)      rows = rows.filter(r => r.market === mkt);
+  if (maxPos)   rows = rows.filter(r => (r.position || 999) <= maxPos);
 
   const tbody = el('rankings-tbody');
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--ink3)">No ranking data yet. Add playlists + keywords, then run a crawl.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--ink3)">No ranking data yet. Add playlists + keywords, then run a crawl.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = rows.map(r => `
+  tbody.innerHTML = rows.map(r => {
+    const prev30 = null; // 30d delta from /api/rankings endpoint (future: add to server)
+    return `
     <tr class="${r.is_competitor ? 'competitor' : ''}">
       <td><strong style="font-weight:500">${esc(r.term)}</strong></td>
       <td>
@@ -2978,7 +3344,58 @@ function renderRankings() {
       <td><span class="badge-mkt">${esc(r.market)}</span></td>
       <td>${posBadge(r.position)}</td>
       <td>${deltaBadge(r.position, r.prev_position)}</td>
-    </tr>
+      <td>—</td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadGroupedRankings() {
+  const body = el('rankings-grouped-body');
+  body.innerHTML = '<div class="panel-empty" style="padding:32px">Loading…</div>';
+  try {
+    const params = new URLSearchParams();
+    const mkt = el('rankings-market-filter')?.value;
+    const maxPos = el('rankings-pos-filter')?.value;
+    if (mkt)    params.set('market', mkt);
+    if (maxPos) params.set('max_position', maxPos);
+    S.rankingsGrouped = await api('/api/rankings/grouped?' + params);
+    renderGroupedRankings();
+  } catch(e) {
+    body.innerHTML = `<div class="panel-empty" style="color:var(--red)">Failed to load grouped rankings.</div>`;
+  }
+}
+
+function renderGroupedRankings() {
+  const q = (el('rankings-search')?.value || '').toLowerCase();
+  let groups = S.rankingsGrouped;
+  if (q) groups = groups.filter(g =>
+    g.playlist_name.toLowerCase().includes(q) ||
+    g.keywords.some(k => k.term.toLowerCase().includes(q))
+  );
+  if (!groups.length) {
+    el('rankings-grouped-body').innerHTML = '<div class="panel-empty" style="padding:32px">No grouped data yet.</div>';
+    return;
+  }
+  el('rankings-grouped-body').innerHTML = groups.map(g => `
+    <div class="grouped-playlist-card">
+      <div class="grouped-playlist-header">
+        ${artOrFallback(g.image_url, g.playlist_name, 32)}
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:14px">${esc(g.playlist_name)}</div>
+          ${g.genre ? `<div style="font-size:11px;color:var(--ink3);font-style:italic">${esc(g.genre)}</div>` : ''}
+        </div>
+        <span class="panel-meta">${g.keywords.length} keyword${g.keywords.length !== 1 ? 's' : ''}</span>
+      </div>
+      ${g.keywords.map(k => `
+        <div class="grouped-kw-row">
+          <span style="flex:1;font-weight:500">${esc(k.term)}</span>
+          <span class="badge-mkt" style="font-size:11px">${esc(k.market)}</span>
+          ${posBadge(k.position)}
+          ${k.pos_7d  != null ? `<span class="change-badge ${k.pos_7d  - k.position > 0 ? 'up' : k.pos_7d  - k.position < 0 ? 'down' : 'flat'}">7d ${k.pos_7d  - k.position > 0 ? '↑' : '↓'}${Math.abs(k.pos_7d  - k.position)}</span>` : `<span class="change-badge new">7d New</span>`}
+          ${k.pos_30d != null ? `<span class="change-badge ${k.pos_30d - k.position > 0 ? 'up' : k.pos_30d - k.position < 0 ? 'down' : 'flat'}">30d ${k.pos_30d - k.position > 0 ? '↑' : '↓'}${Math.abs(k.pos_30d - k.position)}</span>` : `<span class="change-badge new">30d New</span>`}
+        </div>
+      `).join('')}
+    </div>
   `).join('');
 }
 
@@ -3578,7 +3995,12 @@ async function loadAcquisition() {
   const tbody = el('acq-tbody');
   tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--ink3)">Loading…</td></tr>`;
   try {
-    S.acquisition = await api('/api/acquisition');
+    const params = new URLSearchParams();
+    const verified = el('acq-verified-filter')?.value;
+    const dm       = el('acq-dm-filter')?.value;
+    if (verified) params.set('verified', verified);
+    if (dm)       params.set('dm_available', dm);
+    S.acquisition = await api('/api/acquisition?' + params);
     const genres  = [...new Set(S.acquisition.map(a => a.genre).filter(Boolean))].sort();
     const markets = [...new Set(S.acquisition.map(a => a.market).filter(Boolean))].sort();
     el('acq-genre-filter').innerHTML  = '<option value="">All Genres</option>'  + genres.map(g  => `<option value="${esc(g)}">${esc(g)}</option>`).join('');
@@ -3781,16 +4203,19 @@ function renderAcquisition() {
 
 // ── Priority Scout Alerts (Dashboard panel) ───────────────────────
 async function loadScoutAlerts() {
-  const panel = el('dash-scout-panel');
-  const list  = el('dash-scout-list');
+  const moduleEl = el('module-scout');
+  const list     = el('dash-scout-list');
   try {
     const alerts = await api('/api/acquisition-alerts');
     S.scoutAlerts = alerts;
-    if (!alerts.length) {
-      panel.style.display = 'none';
+    const prefs = getModulePrefs();
+    if (!alerts.length || prefs['scout'] === false) {
+      if (moduleEl) moduleEl.style.display = 'none';
       return;
     }
-    panel.style.display = 'block';
+    if (moduleEl) moduleEl.style.display = '';
+    const panel = el('dash-scout-panel');
+    if (panel) panel.style.display = '';
     list.innerHTML = alerts.slice(0, 8).map(a => {
       const ci = a.contact_info || {};
       const hasEmail = (ci.emails || []).length > 0;
@@ -3817,7 +4242,7 @@ async function loadScoutAlerts() {
       `;
     }).join('');
   } catch(e) {
-    panel.style.display = 'none';
+    if (moduleEl) moduleEl.style.display = 'none';
   }
 }
 
@@ -4418,6 +4843,345 @@ async function saveExcludedCountries() {
   } catch(e) {
     showToast('Failed to save exclusions', 'error');
   }
+}
+
+// ── Auth / Login ─────────────────────────────────────────────────
+async function doLogin() {
+  const user = el('login-user').value.trim();
+  const pass = el('login-pass').value;
+  const btn  = el('login-btn');
+  const errEl = el('login-error');
+  if (!user || !pass) { errEl.textContent = 'Enter username and password'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, password: pass }),
+    });
+    const data = await res.json();
+    if (data.ok && data.token) {
+      sessionStorage.setItem('rkfy_token', data.token);
+      el('login-gate').classList.add('hidden');
+      errEl.textContent = '';
+      init().catch(console.error);
+    } else {
+      errEl.textContent = 'Invalid username or password';
+    }
+  } catch(e) {
+    errEl.textContent = 'Connection error — try again';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Sign in';
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('rkfy_token');
+  el('login-gate').classList.remove('hidden');
+  el('login-user').value = '';
+  el('login-pass').value = '';
+  el('login-error').textContent = '';
+}
+
+// ── Modular Dashboard ─────────────────────────────────────────────
+const MODULE_PREFS_KEY = 'rkfy_modules';
+function getModulePrefs() {
+  try { return JSON.parse(localStorage.getItem(MODULE_PREFS_KEY) || '{}'); } catch { return {}; }
+}
+function saveModulePrefs(prefs) {
+  localStorage.setItem(MODULE_PREFS_KEY, JSON.stringify(prefs));
+}
+
+function toggleDashCustomize() {
+  const bar = el('dash-customize-bar');
+  bar.classList.toggle('hidden');
+  // Sync button states with current module visibility
+  const prefs = getModulePrefs();
+  document.querySelectorAll('.module-toggle-btn').forEach(btn => {
+    const m = btn.dataset.module;
+    const hidden = prefs[m] === false;
+    btn.classList.toggle('active', !hidden);
+  });
+}
+
+function toggleModule(name) {
+  const prefs = getModulePrefs();
+  const currHidden = prefs[name] === false;
+  prefs[name] = currHidden ? true : false; // toggle
+  saveModulePrefs(prefs);
+  applyModulePrefs();
+  // Update button state
+  const btn = document.querySelector(`.module-toggle-btn[data-module="${name}"]`);
+  if (btn) btn.classList.toggle('active', prefs[name] !== false);
+}
+
+function applyModulePrefs() {
+  const prefs = getModulePrefs();
+  const moduleMap = {
+    keywords: 'module-keywords', alerts: 'module-alerts',
+    scout: 'module-scout', chart: 'module-chart', trending: 'module-trending',
+  };
+  for (const [key, elId] of Object.entries(moduleMap)) {
+    const el2 = el(elId);
+    if (!el2) continue;
+    const hidden = prefs[key] === false;
+    el2.classList.toggle('hidden-module', hidden);
+    // Scout is also display:none by default until data loads
+    if (key === 'scout' && !hidden && S.scoutAlerts?.length) {
+      el2.style.display = '';
+    }
+  }
+}
+
+// ── Daily Report ──────────────────────────────────────────────────
+async function openDailyReport() {
+  openModal('modal-daily-report');
+  const body = el('report-body');
+  body.innerHTML = '<div class="panel-empty">Loading…</div>';
+  try {
+    const data = await api('/api/daily-report');
+    el('report-date').textContent = 'Generated ' + timeAgo(data.generated_at);
+    body.innerHTML = `
+      <div class="report-section">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink3);margin-bottom:8px">📈 Top 10 Growers (7d)</div>
+        ${!data.growers.length ? '<div class="panel-empty">No growth data yet.</div>' :
+          data.growers.map((g, i) => `
+            <div class="report-row">
+              <span class="report-rank">${i + 1}</span>
+              <span class="report-name">${esc(g.playlist_name || '—')}</span>
+              <span class="kw-mkt" style="font-size:11px">${esc(g.term)} · ${esc(g.market)}</span>
+              ${posBadge(g.position)}
+              <span class="report-gain">+${fmtNum(g.follower_gain || 0)} (${g.growth_pct || 0}%)</span>
+            </div>
+          `).join('')}
+      </div>
+      <div class="report-section">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink3);margin-bottom:8px">📬 Top 10 DM Targets</div>
+        ${!data.dmTargets.length ? '<div class="panel-empty">No contactable curators found.</div>' :
+          data.dmTargets.map((d, i) => {
+            const ci = d.contact_info || {};
+            const email = (ci.emails || [])[0];
+            const ig    = (ci.instagrams || [])[0];
+            return `
+              <div class="report-row">
+                <span class="report-rank">${i + 1}</span>
+                <span class="report-name">${esc(d.playlist_name || '—')}</span>
+                <span class="kw-mkt" style="font-size:11px">${esc(d.owner || '')} · ${esc(d.market)}</span>
+                ${posBadge(d.position)}
+                ${email ? `<a class="action-btn email" href="mailto:${esc(email)}" style="font-size:11px">✉</a>` : ''}
+                ${ig    ? `<a class="action-btn ig" href="https://ig.me/m/${esc(ig.replace('@',''))}" target="_blank" style="font-size:11px">DM</a>` : ''}
+              </div>`;
+          }).join('')}
+      </div>
+      <div class="report-section">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink3);margin-bottom:8px">🔥 Top 10 Trending Keywords</div>
+        ${!data.trending.length ? '<div class="panel-empty">No keyword intel yet — run a crawl.</div>' :
+          data.trending.map((k, i) => {
+            const score = Number(k.traffic_score) || 0;
+            const sl = score >= 60 ? 's-high' : score >= 30 ? 's-med' : 's-low';
+            return `
+              <div class="report-row">
+                <span class="report-rank">${i + 1}</span>
+                <span class="report-name">${esc(k.term)}</span>
+                <span class="kw-mkt" style="font-size:11px">${esc(k.market)}</span>
+                <span class="growth-cell ${k.growth_pct > 0 ? 'up' : 'flat'}">▲ ${k.growth_pct || 0}%</span>
+                <span class="traffic-score ${sl}">${score}</span>
+              </div>`;
+          }).join('')}
+      </div>
+    `;
+  } catch(e) {
+    body.innerHTML = `<div class="panel-empty" style="color:var(--red)">Failed to load report: ${esc(e.message)}</div>`;
+  }
+}
+
+// ── Monitor / Watchlist ───────────────────────────────────────────
+async function loadMonitor() {
+  el('monitor-list').innerHTML = '<div class="panel-empty">Loading…</div>';
+  try {
+    const [flags, watchlist] = await Promise.all([
+      api('/api/monitor'),
+      api('/api/monitor/watchlist'),
+    ]);
+    el('monitor-count').textContent = `${flags.length} flagged`;
+    renderMonitorFlags(flags);
+    renderWatchlist(watchlist);
+  } catch(e) {
+    el('monitor-list').innerHTML = `<div class="panel-empty" style="color:var(--red)">Failed to load monitor data.</div>`;
+  }
+}
+
+function renderMonitorFlags(rows) {
+  const list = el('monitor-list');
+  if (!rows.length) {
+    list.innerHTML = '<div class="panel-empty">No suspicious playlists detected. All clear ✓</div>';
+    return;
+  }
+  list.innerHTML = rows.map(r => {
+    const flags = [];
+    if (r.flag_zero_engage)  flags.push('<span class="flag-pill zero-engage">⚠ Zero Engagement</span>');
+    if (r.flag_growth_spike) flags.push('<span class="flag-pill growth-spike">📈 Growth Spike</span>');
+    if (r.watched_id)        flags.push(`<span class="flag-pill watched">👁 Watched${r.watch_reason ? ': ' + esc(r.watch_reason) : ''}</span>`);
+    return `
+      <div class="monitor-card">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13.5px;margin-bottom:3px">
+            ${esc(r.playlist_name || '—')}
+            <span style="font-size:11px;color:var(--ink3);font-weight:400;margin-left:6px">${esc(r.owner || '')}</span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            ${flags.join('')}
+          </div>
+          <div style="font-size:12px;color:var(--ink3)">
+            ${esc(r.term)} · ${esc(r.market)} · ${posBadge(r.position)} · ${fmtNum(r.followers)} followers
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+          <a class="action-btn copy" href="https://open.spotify.com/playlist/${esc(r.spotify_id)}" target="_blank">▶ Open</a>
+          ${r.watched_id
+            ? `<button class="action-btn copy" onclick="removeWatch('${esc(r.spotify_id)}')">✕ Unwatch</button>`
+            : `<button class="action-btn copy" onclick="addWatchDirect('${esc(r.spotify_id)}','${esc(r.playlist_name || '')}')">👁 Watch</button>`
+          }
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderWatchlist(rows) {
+  const body = el('watchlist-body');
+  if (!rows.length) {
+    body.innerHTML = '<div class="panel-empty" style="padding:16px">No playlists on your watchlist yet.</div>';
+    return;
+  }
+  body.innerHTML = rows.map(r => `
+    <div class="monitor-card">
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:13px">${esc(r.name || r.spotify_id)}</div>
+        ${r.reason ? `<div style="font-size:12px;color:var(--ink3)">${esc(r.reason)}</div>` : ''}
+        <div style="font-size:11px;color:var(--ink3);margin-top:2px">Added ${timeAgo(r.added_at)}</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <a class="action-btn copy" href="https://open.spotify.com/playlist/${esc(r.spotify_id)}" target="_blank">▶</a>
+        <button class="action-btn copy" onclick="removeWatch('${esc(r.spotify_id)}')">✕ Remove</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function addToWatchlist() {
+  const id   = el('watch-id').value.trim();
+  const name = el('watch-name').value.trim();
+  if (!id) { showToast('Enter a Spotify playlist ID', 'error'); return; }
+  try {
+    await api('/api/monitor/watch', { method: 'POST', body: JSON.stringify({ spotify_id: id, name }) });
+    el('watch-id').value = ''; el('watch-name').value = '';
+    showToast('Added to watchlist ✓', 'success');
+    loadMonitor();
+  } catch(e) { showToast('Failed to add: ' + e.message, 'error'); }
+}
+
+async function addWatchDirect(spotifyId, name) {
+  try {
+    await api('/api/monitor/watch', { method: 'POST', body: JSON.stringify({ spotify_id: spotifyId, name }) });
+    showToast('Added to watchlist ✓', 'success');
+    loadMonitor();
+  } catch(e) { showToast('Failed: ' + e.message, 'error'); }
+}
+
+async function removeWatch(spotifyId) {
+  try {
+    await api(`/api/monitor/watch/${encodeURIComponent(spotifyId)}`, { method: 'DELETE' });
+    showToast('Removed from watchlist', 'success');
+    loadMonitor();
+  } catch(e) { showToast('Failed: ' + e.message, 'error'); }
+}
+
+// ── Seasonal Opportunities ────────────────────────────────────────
+async function loadSeasonal() {
+  el('seasonal-themes').innerHTML = '<div class="panel-empty">Loading…</div>';
+  try {
+    const data = await api('/api/seasonal');
+    el('seasonal-season-label').textContent =
+      `${data.month} · ${data.season.charAt(0).toUpperCase() + data.season.slice(1)} season peaks — click any keyword to add it to tracking`;
+    renderSeasonalThemes(data.themes || []);
+  } catch(e) {
+    el('seasonal-themes').innerHTML = `<div class="panel-empty" style="color:var(--red)">Failed to load seasonal data.</div>`;
+  }
+}
+
+function renderSeasonalThemes(themes) {
+  const container = el('seasonal-themes');
+  if (!themes.length) { container.innerHTML = '<div class="panel-empty">No seasonal themes available.</div>'; return; }
+  container.innerHTML = themes.map(t => {
+    const trackedTerms = new Set(S.keywords.map(k => k.term.toLowerCase()));
+    return `
+      <div class="seasonal-card">
+        <div class="seasonal-card-header">
+          <span class="seasonal-icon">${t.icon}</span>
+          <div>
+            <div class="seasonal-name">${esc(t.theme)}</div>
+            <div class="seasonal-meta">Peak: ${esc(t.peak)}</div>
+          </div>
+          <span class="trend-badge">+${t.trend_pct}%</span>
+        </div>
+        <div style="margin-bottom:10px;display:flex;flex-wrap:wrap">
+          ${t.keywords.map(kw => `
+            <span class="seasonal-kw-chip ${trackedTerms.has(kw.toLowerCase()) ? 'tracked' : ''}"
+              onclick="addSeasonalKeyword('${esc(kw)}')" title="Add to keyword tracking">
+              ${trackedTerms.has(kw.toLowerCase()) ? '✓ ' : '+ '}${esc(kw)}
+            </span>
+          `).join('')}
+        </div>
+        ${t.tracked.length ? `
+          <div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:6px">Tracked results:</div>
+          ${t.tracked.map(r => {
+            const score = Number(r.traffic_score) || 0;
+            const sl = score >= 60 ? 's-high' : score >= 30 ? 's-med' : 's-low';
+            return `
+              <div class="trending-row" style="padding:6px 0">
+                <span class="trending-term">${esc(r.term)}</span>
+                <span class="kw-mkt" style="font-size:11px">${esc(r.market)}</span>
+                <span class="traffic-score ${sl}">${score}</span>
+                <span class="growth-cell ${r.growth_pct > 0 ? 'up' : 'flat'}">▲ ${r.growth_pct || 0}%</span>
+              </div>`;
+          }).join('')}
+        ` : '<div style="font-size:12px;color:var(--ink3)">None of these keywords tracked yet — click to add.</div>'}
+      </div>`;
+  }).join('');
+}
+
+async function addSeasonalKeyword(term) {
+  // Add the keyword to all tracked markets using the first keyword's market, or US default
+  const market = S.keywords[0]?.market || 'US';
+  try {
+    await api('/api/keywords', { method: 'POST', body: JSON.stringify({ term, market }) });
+    showToast(`"${term}" added for ${market} ✓`, 'success');
+    // Reload keywords to update tracked set
+    S.keywords = await api('/api/keywords').catch(() => S.keywords);
+    loadSeasonal();
+  } catch(e) { showToast('Failed: ' + e.message, 'error'); }
+}
+
+// ── Valuation 3.0 client-side helper ─────────────────────────────
+const TIER1_V3 = new Set(['US','GB','UK','DK','IS','NO','MC','FI','CH','IE','LI','SE','NZ','LU','AD','NL','AU','AT','DE','FR','BE']);
+const TIER2_V3 = new Set(['CA','CY','IL','HK','EE','MT','SG','AE','ES','CZ','IT','LT','GR','HU','RO','SK','UY','PT','BR','MX']);
+
+function royaltyRate(market) {
+  if (TIER1_V3.has(market)) return 0.0038;
+  if (TIER2_V3.has(market)) return 0.0026;
+  return 0.0015;
+}
+
+function tierLabel(market) {
+  if (TIER1_V3.has(market)) return `<span class="tier-badge t1">T1</span>`;
+  if (TIER2_V3.has(market)) return `<span class="tier-badge t2">T2</span>`;
+  return `<span class="tier-badge t3">T3</span>`;
+}
+
+function estMonthlyRevenue(followers, market) {
+  const rate = royaltyRate(market);
+  const streams = (Number(followers) || 0) * 0.15;
+  return Math.round(streams * rate * 100) / 100;
 }
 
 // ── Boot ──────────────────────────────────────────────────────────

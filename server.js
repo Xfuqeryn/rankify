@@ -11,6 +11,27 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+const ADMIN_USER    = process.env.ADMIN_USER || 'Administrator';
+const ADMIN_PASS    = process.env.ADMIN_PASS || 'BigKuk69!';
+const SESSION_TOKEN = Buffer.from(`${ADMIN_USER}:${ADMIN_PASS}:rankify`).toString('base64');
+
+app.use('/api', (req, res, next) => {
+  if (req.path === '/login') return next();
+  const auth = (req.headers['authorization'] || '').replace('Bearer ', '');
+  if (auth === SESSION_TOKEN) return next();
+  res.status(401).json({ error: 'Unauthorized' });
+});
+
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body || {};
+  if (username === ADMIN_USER && password === ADMIN_PASS) {
+    res.json({ ok: true, token: SESSION_TOKEN });
+  } else {
+    res.status(401).json({ ok: false, error: 'Invalid credentials' });
+  }
+});
+
 const isLocal =
   !process.env.DATABASE_URL ||
   process.env.DATABASE_URL.includes('localhost') ||
@@ -141,6 +162,18 @@ async function initDB() {
     CREATE INDEX IF NOT EXISTS idx_ki_score  ON keyword_intel(traffic_score DESC);
   `);
 
+  // Session 8 — Enterprise: monitor watchlist
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS monitor_watchlist (
+      id         SERIAL PRIMARY KEY,
+      spotify_id TEXT UNIQUE NOT NULL,
+      name       TEXT,
+      reason     TEXT,
+      added_at   TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_mw_spotify ON monitor_watchlist(spotify_id);
+  `);
+
   // Seed default target genres if table is empty
   await pool.query(`
     INSERT INTO target_genres (name) VALUES
@@ -189,11 +222,23 @@ async function spotifyGet(urlPath) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// ─── Market tiers ─────────────────────────────────────────────────────────────
-const TIER1       = ['US', 'GB', 'DE'];
-const TIER2       = ['FR', 'NL', 'BR'];
-const TIER3       = ['TR', 'ID', 'PH', 'VN'];
-const ALL_MARKETS = [...TIER1, ...TIER2, ...TIER3];
+// ─── Valuation 3.0 — 2026 Royalty Tiers ──────────────────────────────────────
+// Tier 1 ($0.0035+): premium English-speaking + Nordic + core EU markets
+const TIER1 = ['US','GB','UK','DK','IS','NO','MC','FI','CH','IE','LI','SE','NZ','LU','AD','NL','AU','AT','DE','FR','BE'];
+// Tier 2 ($0.0018–$0.0035): secondary developed markets
+const TIER2 = ['CA','CY','IL','HK','EE','MT','SG','AE','ES','CZ','IT','LT','GR','HU','RO','SK','UY','PT','BR','MX'];
+// Tier 3 (<$0.0018): emerging/growth markets
+const TIER3 = ['ZA','PL','SA','TW','MY','TH','PE','CL','UA','PH','MA','PY','ID','TR','AR','VN'];
+const ALL_MARKETS = [...new Set([...TIER1, ...TIER2, ...TIER3])];
+
+// Per-stream royalty rate midpoints for revenue calculation
+const ROYALTY_RATE = (market) => {
+  if (TIER1.includes(market)) return 0.0038;  // T1 avg
+  if (TIER2.includes(market)) return 0.0026;  // T2 avg
+  return 0.0015;                               // T3 avg
+};
+const TIER_MULT = (market) =>
+  TIER1.includes(market) ? 1.3 : TIER2.includes(market) ? 1.1 : 0.9;
 
 // ─── Sync state (shared across requests) ─────────────────────────────────────
 const syncState = {
@@ -986,21 +1031,26 @@ async function enrichKeywordIntel(term, market, apiKey) {
   return { searchVolume, growthPct, competition, trafficScore, totalFollowers, top1Followers };
 }
 
-// ─── Valuation 2.0 helper (5-Year ROI Formula) ───────────────────────────────
+// ─── Valuation 3.0 — 5-Year ROI with 2026 royalty rates ─────────────────────
 
-function calcValuation2(followers, position, market) {
-  const f = Number(followers) || 0;
-  const p = Number(position)  || 10;
-  // Est. monthly streams ≈ followers × 0.15 (conservative listener-to-stream ratio)
-  const estMonthlyStreams = f * 0.15;
-  // Tier bonus
-  const tierMult = TIER1.includes(market) ? 1.3 : TIER2.includes(market) ? 1.1 : 0.9;
-  // Rank bonus
-  const rankMult = p <= 1 ? 1.6 : p <= 3 ? 1.3 : p <= 5 ? 1.1 : 1.0;
-  // Base: per-stream revenue × 12 months × 5 years
-  const base = Math.round(estMonthlyStreams * 0.0025 * 12 * 5 * tierMult * rankMult);
-  return { low: Math.round(base * 0.75), mid: base, high: Math.round(base * 1.25) };
+function calcValuation3(followers, position, market) {
+  const f    = Number(followers) || 0;
+  const p    = Number(position)  || 10;
+  const rate = ROYALTY_RATE(market);
+  const tMult = TIER_MULT(market);
+  const rMult = p <= 1 ? 1.6 : p <= 3 ? 1.3 : p <= 5 ? 1.1 : 1.0;
+  const estMonthlyStreams  = f * 0.15;
+  const estMonthlyRevenue  = estMonthlyStreams * rate;
+  const base = Math.round(estMonthlyRevenue * 12 * 5 * tMult * rMult);
+  return {
+    low:  Math.round(base * 0.75),
+    mid:  base,
+    high: Math.round(base * 1.25),
+    est_monthly_revenue: Math.round(estMonthlyRevenue * 100) / 100,
+    royalty_rate: rate,
+  };
 }
+const calcValuation2 = calcValuation3; // backwards-compat alias
 
 // daily 06:00 UTC
 cron.schedule('0 6 * * *', runCrawl, { timezone: 'UTC' });
@@ -1669,10 +1719,30 @@ app.get('/api/acquisition-alerts', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── Updated Acquisition endpoint — with yield, dormancy, tier, CRM ────────────
+// ── Acquisition endpoint — Valuation 3.0, new filters ────────────────────────
 
 app.get('/api/acquisition', async (req, res) => {
   try {
+    const { verified, dm_available, genre_filter, market } = req.query;
+
+    // Build dynamic filter conditions
+    const extraConds = [];
+    if (verified === 'false') {
+      // Editorial/verified: name starts with "This Is" or owner is Spotify
+      extraConds.push(`(cs.playlist_name ILIKE 'This Is%' OR cs.owner ILIKE 'spotify%')`);
+    } else if (verified === 'true') {
+      // Non-editorial only
+      extraConds.push(`cs.playlist_name NOT ILIKE 'This Is%' AND cs.owner NOT ILIKE 'spotify%'`);
+    }
+    if (dm_available === 'true') {
+      extraConds.push(`cs.contact_info IS NOT NULL AND cs.contact_info != '{}'::jsonb AND cs.contact_info::text NOT IN ('{}','null','""')`);
+    } else if (dm_available === 'false') {
+      extraConds.push(`(cs.contact_info IS NULL OR cs.contact_info = '{}'::jsonb OR cs.contact_info::text IN ('{}','null','""'))`);
+    }
+    if (market) extraConds.push(`k.market = '${market.replace(/'/g,"''")}'`);
+    if (genre_filter) extraConds.push(`cs.genre ILIKE '%${genre_filter.replace(/'/g,"''").replace(/%/g,'\\%')}%'`);
+    const extraWhere = extraConds.length ? 'AND ' + extraConds.join(' AND ') : '';
+
     const { rows } = await pool.query(`
       WITH our_ids AS (SELECT spotify_id FROM playlists),
       latest AS (
@@ -1689,12 +1759,29 @@ app.get('/api/acquisition', async (req, res) => {
           cs.checked_at,
           ROUND(((6 - cs.position) * 15.0) + GREATEST(0, (5000 - COALESCE(cs.followers,0))::float / 100)) AS opportunity_score,
           ROUND(((11.0 - cs.position) * 100.0) / SQRT(GREATEST(cs.followers, 100)))::int AS yield_score,
-          -- Valuation 2.0: (Est Monthly Streams × $0.0025 × 12 × 5) × tier × rank
+          -- Valuation 3.0: 2026 royalty rates × tier × rank × 5yr horizon
           ROUND(
-            (COALESCE(cs.followers,0) * 0.15 * 0.0025 * 12 * 5)
+            (COALESCE(cs.followers,0) * 0.15)
             * CASE k.market
-                WHEN 'US' THEN 1.3 WHEN 'GB' THEN 1.3 WHEN 'DE' THEN 1.3
-                WHEN 'FR' THEN 1.1 WHEN 'NL' THEN 1.1 WHEN 'BR' THEN 1.1
+                WHEN 'US' THEN 0.0038 WHEN 'GB' THEN 0.0038 WHEN 'UK' THEN 0.0038
+                WHEN 'AU' THEN 0.0038 WHEN 'DE' THEN 0.0038 WHEN 'FR' THEN 0.0038
+                WHEN 'NL' THEN 0.0038 WHEN 'SE' THEN 0.0038 WHEN 'NO' THEN 0.0038
+                WHEN 'DK' THEN 0.0038 WHEN 'FI' THEN 0.0038 WHEN 'CH' THEN 0.0038
+                WHEN 'IE' THEN 0.0038 WHEN 'NZ' THEN 0.0038 WHEN 'AT' THEN 0.0038
+                WHEN 'BE' THEN 0.0038 WHEN 'IS' THEN 0.0038 WHEN 'LU' THEN 0.0038
+                WHEN 'CA' THEN 0.0026 WHEN 'SG' THEN 0.0026 WHEN 'AE' THEN 0.0026
+                WHEN 'HK' THEN 0.0026 WHEN 'IL' THEN 0.0026 WHEN 'ES' THEN 0.0026
+                WHEN 'IT' THEN 0.0026 WHEN 'PT' THEN 0.0026 WHEN 'BR' THEN 0.0026
+                WHEN 'MX' THEN 0.0026 WHEN 'CZ' THEN 0.0026 WHEN 'HU' THEN 0.0026
+                WHEN 'RO' THEN 0.0026 WHEN 'GR' THEN 0.0026 WHEN 'SK' THEN 0.0026
+                ELSE 0.0015
+              END
+            * CASE k.market
+                WHEN 'US' THEN 1.3 WHEN 'GB' THEN 1.3 WHEN 'UK' THEN 1.3
+                WHEN 'DE' THEN 1.3 WHEN 'FR' THEN 1.3 WHEN 'AU' THEN 1.3
+                WHEN 'NL' THEN 1.3 WHEN 'SE' THEN 1.3 WHEN 'NO' THEN 1.3
+                WHEN 'BR' THEN 1.1 WHEN 'CA' THEN 1.1 WHEN 'ES' THEN 1.1
+                WHEN 'IT' THEN 1.1 WHEN 'MX' THEN 1.1 WHEN 'SG' THEN 1.1
                 ELSE 0.9
               END
             * CASE
@@ -1703,13 +1790,15 @@ app.get('/api/acquisition', async (req, res) => {
                 WHEN cs.position <= 5 THEN 1.1
                 ELSE 1.0
               END
+            * 60  -- 12 months × 5 years
           ) AS val_mid
         FROM curator_snapshots cs
         JOIN keywords k ON k.id = cs.keyword_id
         WHERE cs.position BETWEEN 1 AND 10
           AND cs.followers > 0
-          AND cs.followers < 5000
+          AND cs.followers < 10000
           AND cs.spotify_id NOT IN (SELECT spotify_id FROM our_ids)
+          ${extraWhere}
         ORDER BY cs.spotify_id, cs.position ASC
       )
       SELECT
@@ -1726,7 +1815,7 @@ app.get('/api/acquisition', async (req, res) => {
       FROM latest l
       LEFT JOIN acquisition_crm ac ON ac.spotify_id = l.spotify_id
       ORDER BY opportunity_score DESC, position ASC
-      LIMIT 200
+      LIMIT 300
     `);
     res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -2018,6 +2107,257 @@ app.post('/api/intel/refresh', async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// ── Daily Report ─────────────────────────────────────────────────────────────
+
+app.get('/api/daily-report', async (req, res) => {
+  try {
+    // Top 10 growers (biggest follower gain in last 7 days)
+    const { rows: growers } = await pool.query(`
+      WITH recent AS (
+        SELECT DISTINCT ON (rh.playlist_id, rh.keyword_id)
+          rh.playlist_id, rh.keyword_id, rh.followers, rh.position
+        FROM rank_history rh ORDER BY rh.playlist_id, rh.keyword_id, rh.checked_at DESC
+      ),
+      week_ago AS (
+        SELECT DISTINCT ON (rh.playlist_id, rh.keyword_id)
+          rh.playlist_id, rh.keyword_id, rh.followers AS old_followers
+        FROM rank_history rh
+        WHERE rh.checked_at <= NOW() - INTERVAL '6 days'
+        ORDER BY rh.playlist_id, rh.keyword_id, rh.checked_at DESC
+      )
+      SELECT p.name AS playlist_name, p.spotify_id, p.image_url,
+             k.term, k.market, r.position, r.followers,
+             COALESCE(r.followers, 0) - COALESCE(w.old_followers, r.followers) AS follower_gain,
+             CASE WHEN COALESCE(w.old_followers, 0) > 0
+               THEN ROUND(((r.followers - w.old_followers)::float / w.old_followers * 100)::numeric, 1)
+               ELSE 0 END AS growth_pct
+      FROM recent r
+      JOIN playlists p ON p.id = r.playlist_id
+      JOIN keywords  k ON k.id = r.keyword_id
+      LEFT JOIN week_ago w ON w.playlist_id = r.playlist_id AND w.keyword_id = r.keyword_id
+      WHERE r.followers > 0
+      ORDER BY follower_gain DESC NULLS LAST
+      LIMIT 10
+    `);
+
+    // Top 10 DM targets (ranked + has contact, not already ours)
+    const { rows: dmTargets } = await pool.query(`
+      SELECT DISTINCT ON (cs.spotify_id)
+        cs.playlist_name, cs.spotify_id, cs.owner, cs.followers,
+        cs.contact_info, cs.genre, k.term, k.market, cs.position
+      FROM curator_snapshots cs
+      JOIN keywords k ON k.id = cs.keyword_id
+      WHERE cs.contact_info IS NOT NULL AND cs.contact_info != '{}'::jsonb
+        AND cs.contact_info::text NOT IN ('{}','null','""')
+        AND cs.position <= 10
+        AND cs.checked_at > NOW() - INTERVAL '7 days'
+        AND cs.spotify_id NOT IN (SELECT spotify_id FROM playlists)
+      ORDER BY cs.spotify_id, cs.position ASC, cs.followers DESC
+      LIMIT 10
+    `);
+
+    // Top 10 trending keywords by traffic score
+    const { rows: trending } = await pool.query(`
+      SELECT k.term, k.market,
+             COALESCE(ki.traffic_score, 1) AS traffic_score,
+             COALESCE(ki.growth_pct, 0)    AS growth_pct,
+             COALESCE(ki.search_volume, 0) AS search_volume
+      FROM keyword_intel ki
+      JOIN keywords k ON k.term = ki.term AND k.market = ki.market
+      WHERE ki.traffic_score > 0
+      ORDER BY ki.traffic_score DESC, ki.growth_pct DESC
+      LIMIT 10
+    `);
+
+    res.json({
+      growers, dmTargets, trending,
+      generated_at: new Date().toISOString(),
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Rankings — Grouped by Playlist view ──────────────────────────────────────
+
+app.get('/api/rankings/grouped', async (req, res) => {
+  try {
+    const { market, max_position } = req.query;
+    const params = [];
+    const conds  = [];
+    if (market)       { params.push(market);           conds.push(`k.market = $${params.length}`); }
+    if (max_position) { params.push(Number(max_position)); conds.push(`c.position <= $${params.length}`); }
+    const where = conds.length ? 'AND ' + conds.join(' AND ') : '';
+
+    const { rows } = await pool.query(`
+      WITH current AS (
+        SELECT DISTINCT ON (rh.playlist_id, rh.keyword_id)
+          rh.playlist_id, rh.keyword_id, rh.position, rh.followers, rh.checked_at
+        FROM rank_history rh WHERE rh.position IS NOT NULL
+        ORDER BY rh.playlist_id, rh.keyword_id, rh.checked_at DESC
+      ),
+      prev7 AS (
+        SELECT DISTINCT ON (rh.playlist_id, rh.keyword_id)
+          rh.playlist_id, rh.keyword_id, rh.position AS pos_7d
+        FROM rank_history rh
+        WHERE rh.position IS NOT NULL AND rh.checked_at <= NOW() - INTERVAL '6 days'
+        ORDER BY rh.playlist_id, rh.keyword_id, rh.checked_at DESC
+      ),
+      prev30 AS (
+        SELECT DISTINCT ON (rh.playlist_id, rh.keyword_id)
+          rh.playlist_id, rh.keyword_id, rh.position AS pos_30d
+        FROM rank_history rh
+        WHERE rh.position IS NOT NULL AND rh.checked_at <= NOW() - INTERVAL '29 days'
+        ORDER BY rh.playlist_id, rh.keyword_id, rh.checked_at DESC
+      )
+      SELECT p.name AS playlist_name, p.spotify_id, p.image_url, p.genre,
+             k.term, k.market, c.position, c.followers,
+             p7.pos_7d, p30.pos_30d
+      FROM current c
+      JOIN playlists p ON p.id = c.playlist_id
+      JOIN keywords  k ON k.id = c.keyword_id
+      LEFT JOIN prev7  p7  ON p7.playlist_id  = c.playlist_id AND p7.keyword_id  = c.keyword_id
+      LEFT JOIN prev30 p30 ON p30.playlist_id = c.playlist_id AND p30.keyword_id = c.keyword_id
+      WHERE 1=1 ${where}
+      ORDER BY p.name, c.position
+    `, params);
+
+    // Group client-facing
+    const groups = {};
+    for (const r of rows) {
+      if (!groups[r.spotify_id]) {
+        groups[r.spotify_id] = {
+          spotify_id: r.spotify_id, playlist_name: r.playlist_name,
+          image_url: r.image_url, genre: r.genre, keywords: [],
+        };
+      }
+      groups[r.spotify_id].keywords.push({
+        term: r.term, market: r.market, position: r.position,
+        followers: r.followers, pos_7d: r.pos_7d, pos_30d: r.pos_30d,
+      });
+    }
+    res.json(Object.values(groups));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Monitor — Suspicious Usage + Watchlist ────────────────────────────────────
+
+app.get('/api/monitor', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT DISTINCT ON (cs.spotify_id)
+        cs.spotify_id, cs.playlist_name, cs.owner, cs.followers,
+        cs.position, cs.genre, cs.contact_info, cs.checked_at,
+        k.term, k.market,
+        mw.id       AS watched_id,
+        mw.reason   AS watch_reason,
+        -- Flags
+        (cs.position <= 5 AND cs.followers < 500)        AS flag_zero_engage,
+        (cs.position <= 3 AND cs.followers > 50000)      AS flag_mega_player,
+        (cs.followers > 5000 AND cs.position > 8)        AS flag_growth_spike
+      FROM curator_snapshots cs
+      JOIN keywords k ON k.id = cs.keyword_id
+      LEFT JOIN monitor_watchlist mw ON mw.spotify_id = cs.spotify_id
+      WHERE cs.checked_at > NOW() - INTERVAL '14 days'
+        AND (
+          mw.id IS NOT NULL
+          OR (cs.position <= 5 AND cs.followers < 500)
+          OR (cs.followers > 5000 AND cs.position > 8)
+        )
+      ORDER BY cs.spotify_id, cs.checked_at DESC
+      LIMIT 150
+    `);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/monitor/watchlist', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`SELECT * FROM monitor_watchlist ORDER BY added_at DESC`);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/monitor/watch', async (req, res) => {
+  const { spotify_id, name, reason } = req.body;
+  if (!spotify_id) return res.status(400).json({ error: 'spotify_id required' });
+  try {
+    await pool.query(
+      `INSERT INTO monitor_watchlist (spotify_id, name, reason) VALUES ($1,$2,$3) ON CONFLICT (spotify_id) DO UPDATE SET reason=EXCLUDED.reason`,
+      [spotify_id, name || spotify_id, reason || '']
+    );
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/monitor/watch/:id', async (req, res) => {
+  try {
+    await pool.query(`DELETE FROM monitor_watchlist WHERE spotify_id = $1`, [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Seasonal Opportunity Engine ────────────────────────────────────────────────
+
+app.get('/api/seasonal', async (req, res) => {
+  try {
+    const month  = new Date().getMonth() + 1;
+    const season = (month >= 12 || month <= 2) ? 'winter' :
+                   (month >= 3  && month <= 5)  ? 'spring' :
+                   (month >= 6  && month <= 8)  ? 'summer' : 'fall';
+
+    const THEMES = {
+      winter: [
+        { theme: 'Winter Arc', icon: '❄️', peak: 'Dec–Feb', trend_pct: 34,
+          keywords: ['gym phonk','workout phonk','dark phonk','winter workout','winter gym','phonk playlist'] },
+        { theme: 'Deep Focus', icon: '🧠', peak: 'Year-round', trend_pct: 18,
+          keywords: ['study music','focus music','deep work','lo-fi study','concentration music'] },
+        { theme: 'Holiday Vibes', icon: '🎄', peak: 'Nov–Jan', trend_pct: 220,
+          keywords: ['christmas music','winter songs','holiday playlist','christmas hits','xmas music'] },
+      ],
+      spring: [
+        { theme: 'Spring Energy', icon: '🌸', peak: 'Mar–May', trend_pct: 28,
+          keywords: ['spring playlist','happy playlist','uplifting music','spring hits','feel good music'] },
+        { theme: 'Study Season', icon: '📚', peak: 'Apr–Jun', trend_pct: 45,
+          keywords: ['exam study music','focus playlist','study beats','study music 2026','deep focus study'] },
+      ],
+      summer: [
+        { theme: 'Summer Vibes', icon: '☀️', peak: 'Jun–Aug', trend_pct: 67,
+          keywords: ['summer hits','summer playlist','beach music','summer songs 2026','hot summer playlist'] },
+        { theme: 'Workout Peak', icon: '💪', peak: 'Apr–Sep', trend_pct: 52,
+          keywords: ['gym music','workout playlist','running music','fitness music','gym hits 2026'] },
+      ],
+      fall: [
+        { theme: 'Autumn Mood', icon: '🍂', peak: 'Sep–Nov', trend_pct: 31,
+          keywords: ['autumn playlist','fall vibes','cozy music','fall songs','autumn chill'] },
+        { theme: 'Back to Work', icon: '💼', peak: 'Sep–Oct', trend_pct: 38,
+          keywords: ['focus music','productivity playlist','work from home music','deep work','work playlist'] },
+      ],
+    };
+
+    const themes = THEMES[season] || [];
+    const results = [];
+
+    for (const theme of themes) {
+      const lowerKws = theme.keywords.map(k => k.toLowerCase());
+      const { rows } = await pool.query(`
+        SELECT k.term, k.market,
+               COALESCE(ki.traffic_score, 1)   AS traffic_score,
+               COALESCE(ki.growth_pct, 0)       AS growth_pct,
+               COALESCE(ki.search_volume, 0)    AS search_volume,
+               COALESCE(ki.total_followers, 0)  AS total_followers
+        FROM keywords k
+        LEFT JOIN keyword_intel ki ON ki.term = k.term AND ki.market = k.market
+        WHERE LOWER(k.term) = ANY($1::text[])
+        ORDER BY traffic_score DESC
+        LIMIT 6
+      `, [lowerKws]);
+      results.push({ ...theme, season, tracked: rows });
+    }
+
+    const monthName = new Date().toLocaleString('en-US', { month: 'long' });
+    res.json({ season, month: monthName, themes: results });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Trigger crawl
