@@ -1530,6 +1530,25 @@
     .val-badge.rev-premium { background: var(--blue-bg); color: var(--blue); }
     .val-badge.ltv-bonus   { background: var(--green-bg); color: var(--green); }
 
+    /* ── Niche filter chips (Monitor) ────────────────────────────── */
+    .niche-chip {
+      padding: 4px 12px; border-radius: var(--rpill); font-size: 12px; font-weight: 500;
+      border: 0.5px solid var(--border2); cursor: pointer; background: var(--surface);
+      color: var(--ink2); transition: all 0.12s;
+    }
+    .niche-chip:hover  { background: var(--surface3); }
+    .niche-chip.active { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+
+    /* ── Crawl More inline button ────────────────────────────────── */
+    .crawl-more-btn {
+      font-size: 11px; padding: 2px 8px; border-radius: 4px;
+      border: 0.5px solid var(--border2); background: var(--surface2);
+      color: var(--ink3); cursor: pointer; white-space: nowrap;
+      transition: all 0.12s;
+    }
+    .crawl-more-btn:hover  { background: var(--surface3); color: var(--ink); }
+    .crawl-more-btn.active { background: var(--blue-bg); color: var(--blue); border-color: var(--blue); }
+
     /* ── Leads filter bar ────────────────────────────────────────── */
     .leads-filter-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
 
@@ -2282,12 +2301,52 @@
       <div class="flex-between section-gap" style="flex-wrap:wrap;gap:10px">
         <div>
           <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Suspicious Usage Monitor</div>
-          <div class="text-muted" style="margin-top:3px">Zero engagement flags · Network Farms · Growth Spikes · Custom watchlist</div>
+          <div class="text-muted" style="margin-top:3px">Zero engagement · Network Farms · Growth Spikes · Custom watchlist</div>
         </div>
-        <button class="btn sm" onclick="loadMonitor()">↻ Refresh</button>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select class="select" id="monitor-min-followers" style="width:120px" onchange="loadMonitor()">
+            <option value="1000">1k+ followers</option>
+            <option value="500">500+ followers</option>
+            <option value="5000">5k+ followers</option>
+            <option value="0">Any</option>
+          </select>
+          <button class="btn sm" onclick="loadMonitor()">↻ Refresh</button>
+        </div>
       </div>
+
+      <!-- Niche Filters -->
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px" id="monitor-niche-filters">
+        <span style="font-size:12px;color:var(--ink3);align-self:center;margin-right:2px">Genre filter:</span>
+        <button class="niche-chip active" data-genre="" onclick="setMonitorGenre(this,'')">All</button>
+        <button class="niche-chip" data-genre="bass house" onclick="setMonitorGenre(this,'bass house')">Bass House</button>
+        <button class="niche-chip" data-genre="sleep" onclick="setMonitorGenre(this,'sleep')">Sleep</button>
+        <button class="niche-chip" data-genre="lo-fi" onclick="setMonitorGenre(this,'lo-fi')">Lo-Fi</button>
+        <button class="niche-chip" data-genre="ambient" onclick="setMonitorGenre(this,'ambient')">Ambient</button>
+        <button class="niche-chip" data-genre="phonk" onclick="setMonitorGenre(this,'phonk')">Phonk</button>
+        <button class="niche-chip" data-genre="house" onclick="setMonitorGenre(this,'house')">House</button>
+        <button class="niche-chip" data-genre="hip hop" onclick="setMonitorGenre(this,'hip hop')">Hip-Hop</button>
+        <button class="niche-chip" data-genre="pop" onclick="setMonitorGenre(this,'pop')">Pop</button>
+        <button class="niche-chip" data-genre="r&b" onclick="setMonitorGenre(this,'r&b')">R&B</button>
+      </div>
+
+      <!-- Watchlist FIRST -->
+      <div class="panel glass-panel section-gap">
+        <div class="panel-header">
+          <span class="panel-title">👁 My Watchlist</span>
+          <span class="panel-meta">Manually tracked playlists</span>
+        </div>
+        <div class="panel-body">
+          <div style="display:flex;gap:8px;padding:12px 16px;border-bottom:0.5px solid var(--border);flex-wrap:wrap">
+            <input class="input" id="watch-id" placeholder="Spotify playlist ID" style="flex:1;min-width:180px" />
+            <input class="input" id="watch-name" placeholder="Name (optional)" style="width:160px" />
+            <button class="btn primary" onclick="addToWatchlist()">Watch</button>
+          </div>
+          <div id="watchlist-body"></div>
+        </div>
+      </div>
+
+      <!-- Flags + Farms 2-col -->
       <div class="two-col-grid section-gap">
-        <!-- Flags panel -->
         <div class="panel glass-panel">
           <div class="panel-header">
             <span class="panel-title">🚨 Flagged Playlists</span>
@@ -2295,28 +2354,12 @@
           </div>
           <div class="panel-body" id="monitor-list"></div>
         </div>
-        <!-- Network Farms panel -->
         <div class="panel glass-panel">
           <div class="panel-header">
             <span class="panel-title">🕸 Network Farms</span>
-            <span class="panel-meta">Owners with 3+ playlists in same search</span>
+            <span class="panel-meta">3+ playlists same owner · same search</span>
           </div>
           <div class="panel-body" id="monitor-farms"></div>
-        </div>
-        <!-- Watchlist panel -->
-        <div class="panel glass-panel span-2">
-          <div class="panel-header">
-            <span class="panel-title">👁 My Watchlist</span>
-            <span class="panel-meta">Manually tracked playlists</span>
-          </div>
-          <div class="panel-body">
-            <div style="display:flex;gap:8px;padding:12px 16px;border-bottom:0.5px solid var(--border);flex-wrap:wrap">
-              <input class="input" id="watch-id" placeholder="Spotify playlist ID" style="flex:1;min-width:180px" />
-              <input class="input" id="watch-name" placeholder="Name (optional)" style="width:160px" />
-              <button class="btn primary" onclick="addToWatchlist()">Watch</button>
-            </div>
-            <div id="watchlist-body"></div>
-          </div>
         </div>
       </div>
     </div>
@@ -2673,54 +2716,74 @@
 
     <!-- ── MARKET MAP ──────────────────────────────────────────── -->
     <div class="view" data-view="market-map" id="view-market-map">
-      <div class="flex-between section-gap">
+      <div class="flex-between section-gap" style="flex-wrap:wrap;gap:10px">
         <div>
           <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Market Map</div>
           <div class="text-muted" style="margin-top:3px">SEO opportunity scores &amp; market leaders</div>
         </div>
+        <button class="btn sm" onclick="loadMarketMap()">↻ Refresh</button>
       </div>
 
-      <!-- SEO opportunity scores -->
-      <div class="panel section-gap">
-        <div class="panel-header">
-          <span class="panel-title">SEO Opportunity Scores</span>
-          <span class="panel-meta">Ease of Entry — 10 = easiest to break into</span>
-        </div>
-        <div class="panel-body">
-          <table class="rankings-table">
-            <thead>
-              <tr>
-                <th>Keyword</th>
-                <th>Market</th>
-                <th>Avg Top-10 Followers</th>
-                <th>Top Spot</th>
-                <th>Ease Score</th>
-              </tr>
-            </thead>
-            <tbody id="seo-scores-tbody"></tbody>
-          </table>
-        </div>
+      <!-- Search / Filter bar -->
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center">
+        <input class="input" id="mm-search" placeholder="Search keyword or curator…" style="width:200px" oninput="filterMarketMap()" />
+        <select class="select" id="mm-market-filter" style="width:100px" onchange="filterMarketMap()">
+          <option value="">All Markets</option>
+          <option value="US">US</option><option value="GB">GB</option>
+          <option value="NL">NL</option><option value="BE">BE</option>
+          <option value="DE">DE</option><option value="FR">FR</option>
+          <option value="SE">SE</option><option value="DK">DK</option>
+          <option value="NO">NO</option><option value="AU">AU</option>
+        </select>
+        <select class="select" id="mm-ease-filter" style="width:130px" onchange="filterMarketMap()">
+          <option value="0">All Ease Scores</option>
+          <option value="7">Easy (7+)</option>
+          <option value="5">Medium (5+)</option>
+        </select>
+        <span class="filter-count" id="mm-count"></span>
       </div>
 
-      <!-- Market leaders -->
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">Market Leaders</span>
-          <span class="panel-meta">Top curators ranked by top-10 appearances</span>
+      <div class="two-col-grid">
+        <!-- SEO opportunity scores -->
+        <div class="panel glass-panel">
+          <div class="panel-header">
+            <span class="panel-title">SEO Opportunity Scores</span>
+            <span class="panel-meta">Ease of Entry — 10 = easiest</span>
+          </div>
+          <div class="panel-body">
+            <table class="rankings-table">
+              <thead>
+                <tr>
+                  <th>Keyword</th>
+                  <th>Market</th>
+                  <th>Avg Followers</th>
+                  <th>Ease</th>
+                </tr>
+              </thead>
+              <tbody id="seo-scores-tbody"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="panel-body">
-          <table class="rankings-table">
-            <thead>
-              <tr>
-                <th>Curator</th>
-                <th>Market</th>
-                <th>Top-10 Slots</th>
-                <th>Keywords</th>
-                <th>Avg Followers</th>
-              </tr>
-            </thead>
-            <tbody id="market-leaders-tbody"></tbody>
-          </table>
+
+        <!-- Market leaders -->
+        <div class="panel glass-panel">
+          <div class="panel-header">
+            <span class="panel-title">Market Leaders</span>
+            <span class="panel-meta">Curators by top-10 appearances</span>
+          </div>
+          <div class="panel-body">
+            <table class="rankings-table">
+              <thead>
+                <tr>
+                  <th>Curator</th>
+                  <th>Market</th>
+                  <th>Top-10</th>
+                  <th>Avg Followers</th>
+                </tr>
+              </thead>
+              <tbody id="market-leaders-tbody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -3627,6 +3690,7 @@ function renderRankings() {
             <span class="badge-mkt" style="font-size:11px">${esc(g.market)}</span>
             <span style="font-size:12px;color:var(--ink3)">${g.rows.length} playlist${g.rows.length !== 1 ? 's' : ''}</span>
             ${topPos <= 10 ? posBadge(topPos) : ''}
+            <button class="crawl-more-btn" onclick="event.stopPropagation();crawlMoreForItem('${esc(g.term)}','${esc(g.market)}',this)" title="Fetch +10 more playlists for this keyword">+10</button>
           </div>
         </td>
       </tr>
@@ -4153,42 +4217,18 @@ async function loadTrends() {
 async function loadMarketMap() {
   const seoTbody = el('seo-scores-tbody');
   const mlTbody  = el('market-leaders-tbody');
-  const loading  = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--ink3)">Loading…</td></tr>`;
+  const loading  = `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--ink3)">Loading…</td></tr>`;
   seoTbody.innerHTML = mlTbody.innerHTML = loading;
   try {
     const [seoScores, leaders] = await Promise.all([
       api('/api/seo-scores'),
       api('/api/market-leaders'),
     ]);
-
-    seoTbody.innerHTML = !seoScores.length
-      ? `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--ink3)">No data yet — run a crawl first.</td></tr>`
-      : seoScores.map(s => `
-          <tr>
-            <td><strong style="font-weight:500">${esc(s.term)}</strong></td>
-            <td><span class="badge-mkt">${esc(s.market)}</span></td>
-            <td class="text-muted">${s.avg_followers ? fmtNum(s.avg_followers) : '—'}</td>
-            <td>
-              ${s.top1_owner ? `<span style="font-size:12.5px">${esc(s.top1_owner)}</span>` : '—'}
-              ${s.top_spot_indie ? ' <span class="opp-chip type-quick_win" style="font-size:10px;padding:1px 6px">indie ⚡</span>' : ''}
-            </td>
-            <td>${easeScoreBadge(s.ease_score)}</td>
-          </tr>
-        `).join('');
-
-    mlTbody.innerHTML = !leaders.length
-      ? `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--ink3)">No curator data yet — run a crawl first.</td></tr>`
-      : leaders.slice(0, 30).map(l => `
-          <tr>
-            <td><strong style="font-weight:500">${esc(l.owner)}</strong></td>
-            <td><span class="badge-mkt">${esc(l.market)}</span></td>
-            <td><span class="badge-pos ${Number(l.top10_count) >= 5 ? 'top3' : Number(l.top10_count) >= 3 ? 'top10' : 'ranked'}">${l.top10_count}</span></td>
-            <td class="text-muted">${l.keyword_count}</td>
-            <td class="text-muted">${l.avg_followers ? fmtNum(l.avg_followers) : '—'}</td>
-          </tr>
-        `).join('');
+    _mmSeoRaw     = seoScores;
+    _mmLeadersRaw = leaders;
+    filterMarketMap();
   } catch (e) {
-    const err = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--red)">Failed to load data.</td></tr>`;
+    const err = `<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--red)">Failed to load data.</td></tr>`;
     seoTbody.innerHTML = mlTbody.innerHTML = err;
   }
 }
@@ -4287,7 +4327,10 @@ function renderLeads() {
             ${favBtn(l.spotify_id, 'renderLeads')}
             <div style="min-width:0">
               <div class="td-name" style="max-width:140px">${esc(l.playlist_name || '—')}</div>
-              ${l.followers ? `<div class="td-label">${fmtNum(l.followers)} followers</div>` : ''}
+              <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px">
+                ${l.followers ? `<div class="td-label">${fmtNum(l.followers)} followers</div>` : ''}
+                ${l.flag_potential_bot ? '<span class="flag-pill" style="background:var(--red-bg);color:var(--red);font-size:10px">🤖 Potential Bot</span>' : ''}
+              </div>
             </div>
           </div>
         </td>
@@ -4299,7 +4342,14 @@ function renderLeads() {
           ${sonicProfile(l.genre)}
         </td>
         <td>${crmSelect(l.spotify_id, l.crm_status, 'updateCRMStatus')}</td>
-        <td><div class="action-btns">${btns.join('') || '<span class="text-muted">—</span>'}</div></td>
+        <td>
+          <div class="action-btns">${btns.join('') || '<span class="text-muted">—</span>'}</div>
+          <button class="crawl-more-btn" style="margin-top:4px"
+            onclick="crawlMoreForItem('${esc(l.term)}','${esc(l.market)}',this)"
+            title="Fetch +10 more playlists for '${esc(l.term)}' in ${esc(l.market)}">
+            ↻ Crawl More
+          </button>
+        </td>
       </tr>
     `;
   }).join('');
@@ -4497,6 +4547,11 @@ function renderAcquisition() {
           <div style="display:flex;flex-direction:column;gap:5px">
             ${crmSelect(r.spotify_id, crmSt, 'updateCRMStatus')}
             <div class="action-btns">${actBtns.join('')}</div>
+            <button class="crawl-more-btn"
+              onclick="crawlMoreForItem('${esc(r.term)}','${esc(r.market)}',this)"
+              title="Fetch +10 more playlists for '${esc(r.term)}'">
+              ↻ Crawl More
+            </button>
           </div>
         </td>
       </tr>
@@ -5068,8 +5123,11 @@ function renderDiscovery() {
         <td class="hide-mobile">
           <span class="priority-badge ${compClass}" style="font-size:11px">${compLabel}</span>
         </td>
-        <td>
-          <button class="btn sm" onclick="refreshIntel('${esc(r.term)}','${esc(r.market || '')}')" title="Re-enrich this keyword">↻</button>
+        <td style="white-space:nowrap">
+          <div style="display:flex;gap:4px;flex-direction:column">
+            <button class="btn sm" onclick="refreshIntel('${esc(r.term)}','${esc(r.market || '')}')" title="Re-enrich this keyword">↻</button>
+            <button class="crawl-more-btn" onclick="crawlMoreForItem('${esc(r.term)}','${esc(r.market || 'US')}',this)" title="Fetch +10 more playlists for this keyword">+10</button>
+          </div>
         </td>
       </tr>
     `;
@@ -5355,8 +5413,12 @@ async function loadMonitor() {
   el('monitor-list').innerHTML  = '<div class="panel-empty">Loading…</div>';
   if (el('monitor-farms')) el('monitor-farms').innerHTML = '<div class="panel-empty">Loading…</div>';
   try {
+    const minFoll = el('monitor-min-followers')?.value || '1000';
+    const genre   = _monitorActiveGenre();
+    const params  = new URLSearchParams({ min_followers: minFoll });
+    if (genre) params.set('genre', genre);
     const [flags, watchlist, farms] = await Promise.all([
-      api('/api/monitor'),
+      api('/api/monitor?' + params),
       api('/api/monitor/watchlist'),
       api('/api/monitor/farms').catch(() => []),
     ]);
@@ -5513,6 +5575,20 @@ function renderSeasonalThemes(themes) {
             </span>
           `).join('')}
         </div>
+        ${t.seo_titles && t.seo_titles.length ? `
+          <div style="margin-bottom:12px">
+            <div style="font-size:11px;font-weight:600;color:var(--ink3);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:6px">💡 SEO Playlist Titles</div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px">
+              ${t.seo_titles.map(title => `
+                <span onclick="copyText('${esc(title)}','Title copied!')"
+                  style="font-size:12px;padding:4px 10px;border-radius:var(--r);background:var(--surface2);border:0.5px solid var(--border2);cursor:pointer;color:var(--ink2)"
+                  title="Click to copy">
+                  📋 ${esc(title)}
+                </span>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
         ${t.tracked.length ? `
           <div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:6px">Tracked results:</div>
           ${t.tracked.map(r => {
@@ -5584,6 +5660,77 @@ function calcValuationClient(followers, position, market, genre = '') {
   const base = Math.round(monthlyRev * 12 * 5 * tMult * rMult * revPremium * ltvBonus);
   return { low: Math.round(base * 0.75), mid: base, high: Math.round(base * 1.25),
            monthly_revenue: Math.round(monthlyRev * 100) / 100, rev_premium: revPremium > 1, ltv_bonus: ltvBonus > 1 };
+}
+
+// ── Monitor niche filters ─────────────────────────────────────────
+function setMonitorGenre(btn, genre) {
+  document.querySelectorAll('.niche-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  loadMonitor();
+}
+
+function _monitorActiveGenre() {
+  const active = document.querySelector('.niche-chip.active');
+  return active ? active.dataset.genre : '';
+}
+
+// ── loadMonitor override to pass params ──────────────────────────
+
+// (patched below — see loadMonitor redefinition)
+
+// ── Market Map filter ─────────────────────────────────────────────
+let _mmSeoRaw = [], _mmLeadersRaw = [];
+
+function filterMarketMap() {
+  const q       = (el('mm-search')?.value || '').toLowerCase();
+  const mkt     = el('mm-market-filter')?.value || '';
+  const minEase = Number(el('mm-ease-filter')?.value) || 0;
+  const cnt     = el('mm-count');
+
+  const seoFiltered = _mmSeoRaw.filter(s =>
+    (!q      || (s.term||'').toLowerCase().includes(q) || (s.top1_owner||'').toLowerCase().includes(q)) &&
+    (!mkt    || s.market === mkt) &&
+    (!minEase || Number(s.ease_score) >= minEase)
+  );
+  const leadFiltered = _mmLeadersRaw.filter(l =>
+    (!q   || (l.owner||'').toLowerCase().includes(q)) &&
+    (!mkt || l.market === mkt)
+  );
+
+  if (cnt) cnt.textContent = `${seoFiltered.length} keyword${seoFiltered.length !== 1 ? 's' : ''}`;
+
+  el('seo-scores-tbody').innerHTML = !seoFiltered.length
+    ? `<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--ink3)">No data — run a crawl or adjust filters.</td></tr>`
+    : seoFiltered.map(s => `
+        <tr>
+          <td><strong style="font-weight:500">${esc(s.term)}</strong></td>
+          <td><span class="badge-mkt">${esc(s.market)}</span></td>
+          <td class="text-muted">${s.avg_followers ? fmtNum(s.avg_followers) : '—'}</td>
+          <td>${easeScoreBadge(s.ease_score)}</td>
+        </tr>`).join('');
+
+  el('market-leaders-tbody').innerHTML = !leadFiltered.length
+    ? `<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--ink3)">No curator data yet.</td></tr>`
+    : leadFiltered.slice(0, 40).map(l => `
+        <tr>
+          <td><strong style="font-weight:500">${esc(l.owner)}</strong></td>
+          <td><span class="badge-mkt">${esc(l.market)}</span></td>
+          <td><span class="badge-pos ${Number(l.top10_count)>=5?'top3':Number(l.top10_count)>=3?'top10':'ranked'}">${l.top10_count}</span></td>
+          <td class="text-muted">${l.avg_followers ? fmtNum(l.avg_followers) : '—'}</td>
+        </tr>`).join('');
+}
+
+// ── Crawl More (global) ───────────────────────────────────────────
+async function crawlMoreForItem(term, market, btn) {
+  if (!term || !market) { showToast('Missing term or market', 'error'); return; }
+  if (btn) { btn.classList.add('active'); btn.textContent = '…'; btn.disabled = true; }
+  try {
+    await api('/api/crawl/keyword', { method: 'POST', body: JSON.stringify({ term, market, per_page: 10 }) });
+    showToast(`Crawling +10 for "${term}" in ${market}`, 'success');
+  } catch(e) { showToast('Failed: ' + e.message, 'error'); }
+  finally {
+    if (btn) { btn.classList.remove('active'); btn.textContent = 'Crawl More'; btn.disabled = false; }
+  }
 }
 
 // ── Song Scout ───────────────────────────────────────────────────

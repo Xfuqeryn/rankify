@@ -207,8 +207,16 @@ async function initDB() {
     INSERT INTO target_genres (name) VALUES
       ('lo-fi'), ('ambient'), ('sleep'), ('study'), ('focus'),
       ('chill'), ('house'), ('deep house'), ('tech house'),
+      ('bass house'), ('afro house'), ('phonk'), ('dark phonk'),
       ('indie pop'), ('hip hop'), ('r&b'), ('jazz'), ('pop')
     ON CONFLICT (name) DO NOTHING
+  `);
+
+  // Seed T1 Core markets into settings (so Discovery/Leads default to these)
+  await pool.query(`
+    INSERT INTO settings (key, value)
+    VALUES ('t1_core_markets', 'US,GB,NL,BE,DK,SE,DE,FR,AU,NO,FI,CH,IE,AT')
+    ON CONFLICT (key) DO NOTHING
   `);
 
   console.log('Database initialized');
@@ -767,14 +775,17 @@ async function runCrawl() {
               );
             }
 
-            // ── Telegram: Top-15 entry alert ──────────────────────────────
+            // ── Telegram: Excellent Opportunity alerts (T1/T2 only, 500+ followers, pos≤10) ──
             const tier = TIER1.includes(kw.market) ? 'T1' : TIER2.includes(kw.market) ? 'T2' : TIER3.includes(kw.market) ? 'T3' : null;
+            const oppScore = ((6 - Math.min(position, 6)) * 15) + Math.max(0, (5000 - (followerMap[playlist.id] || 0)) / 100);
+            const isExcellent = tier && (tier === 'T1' || tier === 'T2') &&
+                                (followerMap[playlist.id] || 0) >= 500 &&
+                                position <= 10 && oppScore > 80 &&
+                                (prevPos === null || prevPos > 10);
             if (
-              tier &&
+              isExcellent &&
               tgSettings.chatId &&
-              !tgSettings.excludedCountries.has(kw.market) &&
-              position <= 15 &&
-              (prevPos === null || prevPos > 15)
+              !tgSettings.excludedCountries.has(kw.market)
             ) {
               const tMsg = [
                 `🎯 <b>Top 15 Entry</b>`,
@@ -1919,15 +1930,32 @@ app.get('/api/leads', async (req, res) => {
         FROM curator_snapshots cs
         WHERE cs.position <= 10
         GROUP BY cs.spotify_id
+      ),
+      -- Potential Bot: playlist with >1k followers and >15% follower swing across snapshots
+      follower_swing AS (
+        SELECT spotify_id,
+          MAX(followers) AS max_followers,
+          MIN(followers) AS min_followers,
+          COUNT(*)       AS snapshot_count
+        FROM curator_snapshots
+        WHERE checked_at > NOW() - INTERVAL '30 days'
+        GROUP BY spotify_id
+        HAVING COUNT(*) > 1
       )
       SELECT
         rc.*,
         COALESCE(inf.influence_count, 0)  AS influence_count,
         COALESCE(ac.status, 'New')        AS crm_status,
-        COALESCE(ac.notes, '')            AS crm_notes
+        COALESCE(ac.notes, '')            AS crm_notes,
+        -- Potential Bot: >1k followers AND follower swing >15% of max in 30 days
+        (fs.max_followers > 1000
+          AND fs.max_followers > 0
+          AND (fs.max_followers - fs.min_followers)::float / fs.max_followers > 0.15
+        ) AS flag_potential_bot
       FROM ranked_contacts rc
       LEFT JOIN influence inf ON inf.spotify_id = rc.spotify_id
       LEFT JOIN acquisition_crm ac ON ac.spotify_id = rc.spotify_id
+      LEFT JOIN follower_swing fs ON fs.spotify_id = rc.spotify_id
       ORDER BY influence_count DESC, rc.position ASC
       LIMIT 500
     `, params);
@@ -2211,21 +2239,28 @@ app.get('/api/daily-report', async (req, res) => {
       LIMIT 10
     `);
 
-    // Top 10 DM targets (ranked + has contact, not already ours)
-    const { rows: dmTargets } = await pool.query(`
+    // Top 10 DM targets — T1/T2 only, 500+ followers, Opportunity Score > 80
+    const T1T2_MARKETS = ['US','GB','UK','DK','IS','NO','MC','FI','CH','IE','LI','SE','NZ','LU','AD','NL','AU','AT','DE','FR','BE',
+                          'CA','CY','IL','HK','EE','MT','SG','AE','ES','CZ','IT','LT','GR','HU','RO','SK','UY','PT','BR','MX'];
+    const { rows: dmRaw } = await pool.query(`
       SELECT DISTINCT ON (cs.spotify_id)
         cs.playlist_name, cs.spotify_id, cs.owner, cs.followers,
-        cs.contact_info, cs.genre, k.term, k.market, cs.position
+        cs.contact_info, cs.genre, k.term, k.market, cs.position,
+        ROUND(((6 - LEAST(cs.position,6)) * 15.0) + GREATEST(0, (5000 - COALESCE(cs.followers,0))::float / 100)) AS opp_score
       FROM curator_snapshots cs
       JOIN keywords k ON k.id = cs.keyword_id
       WHERE cs.contact_info IS NOT NULL AND cs.contact_info != '{}'::jsonb
         AND cs.contact_info::text NOT IN ('{}','null','""')
         AND cs.position <= 10
+        AND cs.followers >= 500
+        AND k.market = ANY($1)
         AND cs.checked_at > NOW() - INTERVAL '7 days'
         AND cs.spotify_id NOT IN (SELECT spotify_id FROM playlists)
       ORDER BY cs.spotify_id, cs.position ASC, cs.followers DESC
-      LIMIT 10
-    `);
+      LIMIT 80
+    `, [T1T2_MARKETS]);
+    // Filter to Excellent Opportunities (opp_score > 80) then take top 10
+    const dmTargets = dmRaw.filter(r => Number(r.opp_score) > 80).slice(0, 10);
 
     // Top 10 trending keywords by traffic score
     const { rows: trending } = await pool.query(`
@@ -2313,6 +2348,12 @@ app.get('/api/rankings/grouped', async (req, res) => {
 
 app.get('/api/monitor', async (req, res) => {
   try {
+    const minFollowers = Math.max(0, Number(req.query.min_followers) || 1000);
+    const genreFilter  = req.query.genre || '';
+    const extraConds   = [`cs.followers >= ${minFollowers}`];
+    if (genreFilter) extraConds.push(`cs.genre ILIKE '%${genreFilter.replace(/'/g,"''")}%'`);
+    const extraWhere = 'AND ' + extraConds.join(' AND ');
+
     const { rows } = await pool.query(`
       WITH owner_farm AS (
         -- Network Farm: same owner has 3+ playlists appearing in same keyword search
@@ -2342,6 +2383,7 @@ app.get('/api/monitor', async (req, res) => {
       LEFT JOIN monitor_watchlist mw ON mw.spotify_id = cs.spotify_id
       LEFT JOIN farm_owners fo ON fo.owner = cs.owner
       WHERE cs.checked_at > NOW() - INTERVAL '14 days'
+        ${extraWhere}
         AND (
           mw.id IS NOT NULL
           OR (cs.position <= 5 AND cs.followers < 500)
@@ -2412,32 +2454,54 @@ app.get('/api/seasonal', async (req, res) => {
                    (month >= 3  && month <= 5)  ? 'spring' :
                    (month >= 6  && month <= 8)  ? 'summer' : 'fall';
 
+    const yr = new Date().getFullYear();
     const THEMES = {
       winter: [
         { theme: 'Winter Arc', icon: '❄️', peak: 'Dec–Feb', trend_pct: 34,
-          keywords: ['gym phonk','workout phonk','dark phonk','winter workout','winter gym','phonk playlist'] },
+          keywords: ['gym phonk','workout phonk','dark phonk','winter workout','winter gym','phonk playlist'],
+          seo_titles: [`Winter Arc Phonk Gym ${yr}`,`Dark Phonk Workout ${yr}`,`Winter Training Phonk Mix`,`Winter Arc Motivation ${yr}`] },
         { theme: 'Deep Focus', icon: '🧠', peak: 'Year-round', trend_pct: 18,
-          keywords: ['study music','focus music','deep work','lo-fi study','concentration music'] },
+          keywords: ['study music','focus music','deep work','lo-fi study','concentration music'],
+          seo_titles: [`Deep Focus Lo-Fi Study ${yr}`,`Lo-Fi Study Music ${yr}`,`Focus Music Deep Work ${yr}`,`Concentration Beats ${yr}`] },
+        { theme: 'Sleep & Recovery', icon: '🌙', peak: 'Year-round', trend_pct: 22,
+          keywords: ['sleep music','deep sleep','ambient sleep','relaxing sleep music','sleep sounds'],
+          seo_titles: [`Deep Sleep Ambient ${yr}`,`Sleep Music 8 Hours ${yr}`,`Relaxing Sleep Sounds ${yr}`,`Ambient Sleep Music ${yr}`] },
         { theme: 'Holiday Vibes', icon: '🎄', peak: 'Nov–Jan', trend_pct: 220,
-          keywords: ['christmas music','winter songs','holiday playlist','christmas hits','xmas music'] },
+          keywords: ['christmas music','winter songs','holiday playlist','christmas hits','xmas music'],
+          seo_titles: [`Christmas Hits ${yr}`,`Holiday Playlist ${yr}`,`Xmas Music ${yr}`,`Winter Songs ${yr}`] },
       ],
       spring: [
         { theme: 'Spring Energy', icon: '🌸', peak: 'Mar–May', trend_pct: 28,
-          keywords: ['spring playlist','happy playlist','uplifting music','spring hits','feel good music'] },
+          keywords: ['spring playlist','happy playlist','uplifting music','spring hits','feel good music'],
+          seo_titles: [`Spring Playlist ${yr}`,`Feel Good Music ${yr}`,`Uplifting Spring Hits ${yr}`,`Happy Vibes Playlist ${yr}`] },
         { theme: 'Study Season', icon: '📚', peak: 'Apr–Jun', trend_pct: 45,
-          keywords: ['exam study music','focus playlist','study beats','study music 2026','deep focus study'] },
+          keywords: ['exam study music','focus playlist','study beats','study music 2026','deep focus study'],
+          seo_titles: [`Study Music ${yr} Exam Season`,`Focus Beats Study ${yr}`,`Deep Focus Study ${yr}`,`Lo-Fi Study Session ${yr}`] },
+        { theme: 'Running & Outdoors', icon: '🏃', peak: 'Mar–Sep', trend_pct: 33,
+          keywords: ['running music','outdoor workout','spring running','cardio playlist','jogging music'],
+          seo_titles: [`Running Playlist ${yr}`,`Spring Cardio Mix ${yr}`,`Jogging Music ${yr}`,`Outdoor Workout Beats ${yr}`] },
       ],
       summer: [
         { theme: 'Summer Vibes', icon: '☀️', peak: 'Jun–Aug', trend_pct: 67,
-          keywords: ['summer hits','summer playlist','beach music','summer songs 2026','hot summer playlist'] },
+          keywords: ['summer hits','summer playlist','beach music','summer songs 2026','hot summer playlist'],
+          seo_titles: [`Summer Hits ${yr}`,`Beach Playlist ${yr}`,`Hot Summer Songs ${yr}`,`Summer Vibes ${yr}`] },
         { theme: 'Workout Peak', icon: '💪', peak: 'Apr–Sep', trend_pct: 52,
-          keywords: ['gym music','workout playlist','running music','fitness music','gym hits 2026'] },
+          keywords: ['gym music','workout playlist','running music','fitness music','gym hits 2026'],
+          seo_titles: [`Gym Playlist ${yr}`,`Workout Hits ${yr}`,`Fitness Music ${yr}`,`Gym Motivation ${yr}`] },
+        { theme: 'Afro & Dance', icon: '🎉', peak: 'Jun–Sep', trend_pct: 41,
+          keywords: ['afrobeats','afro house','afro pop','dance music summer','tropical house'],
+          seo_titles: [`Afrobeats ${yr}`,`Afro House Summer ${yr}`,`Tropical House Mix ${yr}`,`Dance Hits Summer ${yr}`] },
       ],
       fall: [
         { theme: 'Autumn Mood', icon: '🍂', peak: 'Sep–Nov', trend_pct: 31,
-          keywords: ['autumn playlist','fall vibes','cozy music','fall songs','autumn chill'] },
+          keywords: ['autumn playlist','fall vibes','cozy music','fall songs','autumn chill'],
+          seo_titles: [`Autumn Playlist ${yr}`,`Fall Vibes ${yr}`,`Cozy Music ${yr}`,`Autumn Chill Mix ${yr}`] },
         { theme: 'Back to Work', icon: '💼', peak: 'Sep–Oct', trend_pct: 38,
-          keywords: ['focus music','productivity playlist','work from home music','deep work','work playlist'] },
+          keywords: ['focus music','productivity playlist','work from home music','deep work','work playlist'],
+          seo_titles: [`Productivity Playlist ${yr}`,`Deep Work Music ${yr}`,`Work From Home ${yr}`,`Focus Music Work ${yr}`] },
+        { theme: 'Bass & Energy', icon: '⚡', peak: 'Sep–Dec', trend_pct: 29,
+          keywords: ['bass house','bass music','dark techno','industrial techno','bass phonk'],
+          seo_titles: [`Bass House ${yr}`,`Dark Techno Mix ${yr}`,`Bass Phonk ${yr}`,`Industrial Techno ${yr}`] },
       ],
     };
 
