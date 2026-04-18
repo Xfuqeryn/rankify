@@ -90,7 +90,7 @@
 
     body {
       font-family: var(--ff-ui);
-      font-size: 16px; /* 1.2× from 14px */
+      font-size: 17px; /* 1.25× from 14px base */
       color: var(--ink);
       background: var(--surface2);
       display: flex;
@@ -1471,6 +1471,68 @@
 
     .fold-header-row:hover td { background: var(--surface3); }
 
+    /* ── Liquid Glass panels ─────────────────────────────────────── */
+    .glass-panel {
+      background: rgba(255,255,255,0.72);
+      backdrop-filter: blur(14px) saturate(160%);
+      -webkit-backdrop-filter: blur(14px) saturate(160%);
+      border: 0.5px solid rgba(0,0,0,0.10);
+      border-radius: var(--rlg);
+      box-shadow: 0 2px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.55);
+    }
+    @media (prefers-color-scheme: dark) {
+      .glass-panel {
+        background: rgba(28,28,28,0.82);
+        border: 0.5px solid rgba(255,255,255,0.10);
+        box-shadow: 0 2px 20px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.05);
+      }
+    }
+
+    /* ── Two-column grid ─────────────────────────────────────────── */
+    .two-col-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .two-col-grid .span-2 { grid-column: span 2; }
+    @media (max-width: 900px) {
+      .two-col-grid { grid-template-columns: 1fr; }
+      .two-col-grid .span-2 { grid-column: span 1; }
+    }
+
+    /* ── Stickiness Score bar ────────────────────────────────────── */
+    .stick-bar { width: 100%; height: 5px; background: var(--surface3); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+    .stick-fill { height: 5px; border-radius: 3px; transition: width 0.3s; }
+    .stick-fill.high { background: var(--green); }
+    .stick-fill.mid  { background: var(--amber); }
+    .stick-fill.low  { background: var(--ink3); }
+    .stick-score { font-size: 11px; font-weight: 600; }
+    .stick-score.high { color: var(--green); }
+    .stick-score.mid  { color: var(--amber); }
+    .stick-score.low  { color: var(--ink3); }
+
+    /* ── Scout track card ────────────────────────────────────────── */
+    .scout-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+    .scout-card {
+      background: var(--surface); border: 0.5px solid var(--border2);
+      border-radius: var(--rlg); overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .scout-card-art { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: var(--surface3); }
+    .scout-card-body { padding: 12px 14px; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .scout-track-name { font-weight: 600; font-size: 13px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .scout-artist { font-size: 12px; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .scout-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .scout-card-footer { padding: 0 14px 12px; display: flex; gap: 8px; }
+
+    /* ── Valuation premium badges ────────────────────────────────── */
+    .val-badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; letter-spacing: 0.3px; }
+    .val-badge.rev-premium { background: var(--blue-bg); color: var(--blue); }
+    .val-badge.ltv-bonus   { background: var(--green-bg); color: var(--green); }
+
+    /* ── Leads filter bar ────────────────────────────────────────── */
+    .leads-filter-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+
     .market-grid {
       display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;
     }
@@ -2010,6 +2072,10 @@
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1A6.5 6.5 0 111 7.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M1 3V1h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.5 4.5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       Crawl
     </div>
+    <div class="nav-item" data-view="scout" onclick="navigate('scout')">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1 13l4-7 3 3 3-5 3 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="3.5" r="1.5" stroke="currentColor" stroke-width="1.3"/></svg>
+      Song Scout
+    </div>
     <div class="nav-item" data-view="leads" onclick="navigate('leads')">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 13c0-3 2.5-4.5 5.5-4.5S13 10 13 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M10.5 7l1 1 2-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Leads
@@ -2216,31 +2282,41 @@
       <div class="flex-between section-gap" style="flex-wrap:wrap;gap:10px">
         <div>
           <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Suspicious Usage Monitor</div>
-          <div class="text-muted" style="margin-top:3px">High rank + zero engagement flags, plus your custom watchlist</div>
+          <div class="text-muted" style="margin-top:3px">Zero engagement flags · Network Farms · Growth Spikes · Custom watchlist</div>
         </div>
         <button class="btn sm" onclick="loadMonitor()">↻ Refresh</button>
       </div>
-      <!-- Flags panel -->
-      <div class="panel section-gap">
-        <div class="panel-header">
-          <span class="panel-title">🚨 Flagged Playlists</span>
-          <span class="panel-meta" id="monitor-count"></span>
-        </div>
-        <div class="panel-body" id="monitor-list"></div>
-      </div>
-      <!-- Watchlist panel -->
-      <div class="panel section-gap">
-        <div class="panel-header">
-          <span class="panel-title">👁 My Watchlist</span>
-          <span class="panel-meta">Manually watched playlists</span>
-        </div>
-        <div class="panel-body">
-          <div style="display:flex;gap:8px;padding:12px 16px;border-bottom:0.5px solid var(--border)">
-            <input class="input" id="watch-id" placeholder="Spotify playlist ID" style="flex:1" />
-            <input class="input" id="watch-name" placeholder="Name (optional)" style="width:160px" />
-            <button class="btn primary" onclick="addToWatchlist()">Watch</button>
+      <div class="two-col-grid section-gap">
+        <!-- Flags panel -->
+        <div class="panel glass-panel">
+          <div class="panel-header">
+            <span class="panel-title">🚨 Flagged Playlists</span>
+            <span class="panel-meta" id="monitor-count"></span>
           </div>
-          <div id="watchlist-body"></div>
+          <div class="panel-body" id="monitor-list"></div>
+        </div>
+        <!-- Network Farms panel -->
+        <div class="panel glass-panel">
+          <div class="panel-header">
+            <span class="panel-title">🕸 Network Farms</span>
+            <span class="panel-meta">Owners with 3+ playlists in same search</span>
+          </div>
+          <div class="panel-body" id="monitor-farms"></div>
+        </div>
+        <!-- Watchlist panel -->
+        <div class="panel glass-panel span-2">
+          <div class="panel-header">
+            <span class="panel-title">👁 My Watchlist</span>
+            <span class="panel-meta">Manually tracked playlists</span>
+          </div>
+          <div class="panel-body">
+            <div style="display:flex;gap:8px;padding:12px 16px;border-bottom:0.5px solid var(--border);flex-wrap:wrap">
+              <input class="input" id="watch-id" placeholder="Spotify playlist ID" style="flex:1;min-width:180px" />
+              <input class="input" id="watch-name" placeholder="Name (optional)" style="width:160px" />
+              <button class="btn primary" onclick="addToWatchlist()">Watch</button>
+            </div>
+            <div id="watchlist-body"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -2262,12 +2338,15 @@
       <div class="flex-between section-gap" style="flex-wrap:wrap;gap:10px">
         <div>
           <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Research Engine</div>
-          <div class="text-muted" style="margin-top:3px">Targeted crawls — saves API credits vs a full Master Sync</div>
+          <div class="text-muted" style="margin-top:3px">Targeted crawls · Auto-scheduled 6 PM GMT+1 daily · 24h guard prevents duplicate runs</div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <div id="crawl-status-pill" style="font-size:12px;color:var(--ink3)"></div>
-          <button class="btn primary" onclick="triggerCrawl()" id="crawl-full-btn">
-            ↻ Full Sync
+          <button class="btn sm" id="crawl-expand-pl-btn" onclick="doExpandPlaylists()" title="Fetch +10 more playlists per tracked keyword">
+            +10 Playlists
+          </button>
+          <button class="btn sm" id="crawl-expand-kw-btn" onclick="doExpandKeywords()" title="Auto-generate +10 keyword variations per genre">
+            +10 Keywords
           </button>
         </div>
       </div>
@@ -2328,6 +2407,35 @@
         <div class="panel-body" id="crawl-log" style="padding:14px 16px;font-size:13px;color:var(--ink2)">
           Loading status…
         </div>
+      </div>
+    </div>
+
+    <!-- ── SONG SCOUT ───────────────────────────────────────── -->
+    <div class="view" data-view="scout" id="view-scout">
+      <div class="flex-between section-gap" style="flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">A&R Song Scout</div>
+          <div class="text-muted" style="margin-top:3px">Stickiness Score = Popularity (60%) + Recency (40%) · Tracks from top T1/T2 playlists</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select class="select" id="scout-market" style="width:90px" onchange="loadScout()">
+            <option value="">All T1/T2</option>
+            <option value="US">US</option><option value="GB">GB</option>
+            <option value="DE">DE</option><option value="FR">FR</option>
+            <option value="NL">NL</option><option value="AU">AU</option>
+            <option value="SE">SE</option><option value="NO">NO</option>
+            <option value="CA">CA</option><option value="BR">BR</option>
+          </select>
+          <select class="select" id="scout-min-score" style="width:110px" onchange="loadScout()">
+            <option value="0">All Scores</option>
+            <option value="60">60+ Hot</option>
+            <option value="75">75+ Fire 🔥</option>
+          </select>
+          <button class="btn primary" onclick="refreshScout()">↻ Refresh Tracks</button>
+        </div>
+      </div>
+      <div id="scout-tracks-list">
+        <div class="panel-empty" style="padding:60px 0">Loading song data… first refresh may take a moment.</div>
       </div>
     </div>
 
@@ -2634,7 +2742,14 @@
         <div class="filter-bar" id="leads-filter-bar">
           <input class="input" id="leads-search" placeholder="Search curator or playlist…" style="width:200px" oninput="renderLeads()" />
           <button class="fav-only-toggle" id="leads-fav-toggle" onclick="toggleLeadsFavOnly()">☆ Starred</button>
-          <select class="select" id="leads-genre-filter" style="width:140px" onchange="renderLeads()">
+          <select class="select" id="leads-min-followers" style="width:120px" onchange="loadLeads()">
+            <option value="1000">1k+ followers</option>
+            <option value="5000">5k+ followers</option>
+            <option value="10000">10k+ followers</option>
+            <option value="50000">50k+ followers</option>
+            <option value="0">Any followers</option>
+          </select>
+          <select class="select" id="leads-genre-filter" style="width:140px" onchange="loadLeads()">
             <option value="">All Genres</option>
           </select>
           <select class="select" id="leads-market-filter" style="width:100px" onchange="renderLeads()">
@@ -3109,6 +3224,7 @@ function navigate(view) {
     trends:'Trends', 'market-map':'Market Map', leads:'Lead CRM',
     acquisition:'Acquisition Scout', genres:'Target Genres', discovery:'Keyword Discovery',
     monitor:'Monitor', seasonal:'Seasonal Opportunities', crawl:'Research Engine',
+    scout:'Song Scout',
   };
   el('page-title').textContent = titles[view] || view;
   const contentEl = document.querySelector('.content');
@@ -3129,6 +3245,7 @@ function navigate(view) {
   if (view === 'monitor')       loadMonitor();
   if (view === 'seasonal')      loadSeasonal();
   if (view === 'crawl')         loadCrawl();
+  if (view === 'scout')         loadScout();
 }
 
 // ── Init ─────────────────────────────────────────────────────────
@@ -4081,11 +4198,16 @@ async function loadLeads() {
   const tbody = el('leads-tbody');
   tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--ink3)">Loading…</td></tr>`;
   try {
-    S.leads = await api('/api/leads');
-    // Populate filter dropdowns
-    const genres  = [...new Set(S.leads.map(l => l.genre).filter(Boolean))].sort();
+    const minFoll = el('leads-min-followers')?.value || '1000';
+    const genre   = el('leads-genre-filter')?.value  || '';
+    const params  = new URLSearchParams();
+    if (minFoll) params.set('min_followers', minFoll);
+    if (genre)   params.set('genre', genre);
+    S.leads = await api('/api/leads?' + params);
+    // Populate genre filter from tracked genres (server-filtered, so repopulate from returned data)
+    const genreOpts = S.genres?.map(g => `<option value="${esc(g.name)}"${g.name === genre ? ' selected' : ''}>${esc(g.name)}</option>`).join('') || '';
+    el('leads-genre-filter').innerHTML  = '<option value="">All Genres</option>' + genreOpts;
     const markets = [...new Set(S.leads.map(l => l.market).filter(Boolean))].sort();
-    el('leads-genre-filter').innerHTML  = '<option value="">All Genres</option>'  + genres.map(g  => `<option value="${esc(g)}">${esc(g)}</option>`).join('');
     el('leads-market-filter').innerHTML = '<option value="">All Markets</option>' + markets.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('');
     renderLeads();
   } catch (e) {
@@ -4348,6 +4470,10 @@ function renderAcquisition() {
         <td class="hide-mobile">
           <div class="text-muted" style="font-size:12.5px">${fmtNum(r.followers)}</div>
           ${valMid > 0 ? `<div class="val-range" style="margin-top:3px"><span class="val-bounds">${fmtPrice(valLow)}</span><span class="val-mid">${fmtPrice(valMid)}</span><span class="val-bounds">${fmtPrice(valHigh)}</span></div>` : ''}
+          <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">
+            ${r.has_rev_premium ? '<span class="val-badge rev-premium">+40% T1/T2</span>' : ''}
+            ${r.has_ltv_bonus   ? '<span class="val-badge ltv-bonus">+25% LTV</span>' : ''}
+          </div>
         </td>
         <td class="hide-mobile">
           <div class="yield-bar">
@@ -5226,15 +5352,18 @@ async function openDailyReport() {
 
 // ── Monitor / Watchlist ───────────────────────────────────────────
 async function loadMonitor() {
-  el('monitor-list').innerHTML = '<div class="panel-empty">Loading…</div>';
+  el('monitor-list').innerHTML  = '<div class="panel-empty">Loading…</div>';
+  if (el('monitor-farms')) el('monitor-farms').innerHTML = '<div class="panel-empty">Loading…</div>';
   try {
-    const [flags, watchlist] = await Promise.all([
+    const [flags, watchlist, farms] = await Promise.all([
       api('/api/monitor'),
       api('/api/monitor/watchlist'),
+      api('/api/monitor/farms').catch(() => []),
     ]);
     el('monitor-count').textContent = `${flags.length} flagged`;
     renderMonitorFlags(flags);
     renderWatchlist(watchlist);
+    renderNetworkFarms(farms);
   } catch(e) {
     el('monitor-list').innerHTML = `<div class="panel-empty" style="color:var(--red)">Failed to load monitor data.</div>`;
   }
@@ -5248,9 +5377,11 @@ function renderMonitorFlags(rows) {
   }
   list.innerHTML = rows.map(r => {
     const flags = [];
-    if (r.flag_zero_engage)  flags.push('<span class="flag-pill zero-engage">⚠ Zero Engagement</span>');
-    if (r.flag_growth_spike) flags.push('<span class="flag-pill growth-spike">📈 Growth Spike</span>');
-    if (r.watched_id)        flags.push(`<span class="flag-pill watched">👁 Watched${r.watch_reason ? ': ' + esc(r.watch_reason) : ''}</span>`);
+    if (r.flag_zero_engage)   flags.push('<span class="flag-pill zero-engage">⚠ Zero Engagement</span>');
+    if (r.flag_growth_spike)  flags.push('<span class="flag-pill growth-spike">📈 Growth Spike</span>');
+    if (r.flag_network_farm)  flags.push('<span class="flag-pill" style="background:var(--amber-bg);color:var(--amber)">🕸 Network Farm</span>');
+    if (r.flag_mega_player)   flags.push('<span class="flag-pill" style="background:var(--blue-bg);color:var(--blue)">🏆 Mega Player</span>');
+    if (r.watched_id)         flags.push(`<span class="flag-pill watched">👁 Watched${r.watch_reason ? ': ' + esc(r.watch_reason) : ''}</span>`);
     return `
       <div class="monitor-card">
         <div style="flex:1;min-width:0">
@@ -5274,6 +5405,27 @@ function renderMonitorFlags(rows) {
         </div>
       </div>`;
   }).join('');
+}
+
+function renderNetworkFarms(farms) {
+  const el2 = el('monitor-farms');
+  if (!el2) return;
+  if (!farms || !farms.length) {
+    el2.innerHTML = '<div class="panel-empty" style="padding:16px">No network farms detected in recent data.</div>';
+    return;
+  }
+  el2.innerHTML = farms.map(f => `
+    <div class="monitor-card" style="flex-direction:column;gap:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:600;font-size:13px">${esc(f.owner || '—')}</div>
+        <span class="flag-pill" style="background:var(--amber-bg);color:var(--amber);font-size:11px">${f.playlist_count} playlists</span>
+      </div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:2px;line-height:1.5">
+        ${esc(f.sample_names || '')}
+        ${f.total_followers ? `· ${fmtNum(f.total_followers)} total followers` : ''}
+      </div>
+    </div>
+  `).join('');
 }
 
 function renderWatchlist(rows) {
@@ -5391,9 +5543,10 @@ async function addSeasonalKeyword(term) {
   } catch(e) { showToast('Failed: ' + e.message, 'error'); }
 }
 
-// ── Valuation 3.0 client-side helper ─────────────────────────────
+// ── Valuation 3.2 client-side helper ─────────────────────────────
 const TIER1_V3 = new Set(['US','GB','UK','DK','IS','NO','MC','FI','CH','IE','LI','SE','NZ','LU','AD','NL','AU','AT','DE','FR','BE']);
 const TIER2_V3 = new Set(['CA','CY','IL','HK','EE','MT','SG','AE','ES','CZ','IT','LT','GR','HU','RO','SK','UY','PT','BR','MX']);
+const PASSIVE_GENRE_KEYS = ['sleep','lo-fi','lofi','ambient','study','focus','relax','meditation','chill','nature','piano','classical'];
 
 function royaltyRate(market) {
   if (TIER1_V3.has(market)) return 0.0038;
@@ -5407,10 +5560,142 @@ function tierLabel(market) {
   return `<span class="tier-badge t3">T3</span>`;
 }
 
+function isPassiveGenreClient(genre) {
+  if (!genre) return false;
+  const g = genre.toLowerCase();
+  return PASSIVE_GENRE_KEYS.some(k => g.includes(k));
+}
+
 function estMonthlyRevenue(followers, market) {
   const rate = royaltyRate(market);
   const streams = (Number(followers) || 0) * 0.15;
   return Math.round(streams * rate * 100) / 100;
+}
+
+// Full Valuation 3.2 — use this for client-only estimates (not acquisition which comes from server)
+function calcValuationClient(followers, position, market, genre = '') {
+  const f = Number(followers) || 0, p = Number(position) || 10;
+  const rate = royaltyRate(market);
+  const tMult = TIER1_V3.has(market) ? 1.3 : TIER2_V3.has(market) ? 1.1 : 0.9;
+  const rMult = p <= 1 ? 1.6 : p <= 3 ? 1.3 : p <= 5 ? 1.1 : 1.0;
+  const revPremium = (TIER1_V3.has(market) || TIER2_V3.has(market)) && p <= 3 ? 1.4 : 1.0;
+  const ltvBonus   = isPassiveGenreClient(genre) ? 1.25 : 1.0;
+  const monthlyRev = f * 0.15 * rate;
+  const base = Math.round(monthlyRev * 12 * 5 * tMult * rMult * revPremium * ltvBonus);
+  return { low: Math.round(base * 0.75), mid: base, high: Math.round(base * 1.25),
+           monthly_revenue: Math.round(monthlyRev * 100) / 100, rev_premium: revPremium > 1, ltv_bonus: ltvBonus > 1 };
+}
+
+// ── Song Scout ───────────────────────────────────────────────────
+async function loadScout() {
+  const list = el('scout-tracks-list');
+  list.innerHTML = '<div class="panel-empty" style="padding:60px 0">Loading tracks…</div>';
+  try {
+    const market   = el('scout-market')?.value    || '';
+    const minScore = el('scout-min-score')?.value || '0';
+    const params   = new URLSearchParams({ limit: 80 });
+    if (market)               params.set('market', market);
+    if (Number(minScore) > 0) params.set('min_score', minScore);
+    const tracks = await api('/api/scout?' + params);
+    renderScoutTracks(tracks);
+  } catch(e) {
+    el('scout-tracks-list').innerHTML = `<div class="panel-empty" style="color:var(--red)">Failed to load tracks: ${esc(e.message)}</div>`;
+  }
+}
+
+async function refreshScout() {
+  const btn = document.querySelector('[onclick="refreshScout()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Refreshing…'; }
+  try {
+    await api('/api/scout/refresh', { method: 'POST' });
+    showToast('Scout refresh started — check back in ~30s', 'success');
+    setTimeout(() => loadScout(), 15000);
+  } catch(e) {
+    showToast('Refresh failed: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '↻ Refresh Tracks'; }
+  }
+}
+
+function renderScoutTracks(tracks) {
+  const list = el('scout-tracks-list');
+  if (!tracks.length) {
+    list.innerHTML = `<div class="panel-empty" style="padding:60px 0;text-align:center">
+      <div style="font-size:32px;margin-bottom:12px">🎵</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px">No tracks indexed yet</div>
+      <div style="font-size:13px;color:var(--ink3);margin-bottom:16px">Click "Refresh Tracks" to fetch songs from top T1/T2 playlists</div>
+      <button class="btn primary" onclick="refreshScout()">↻ Refresh Tracks</button>
+    </div>`;
+    return;
+  }
+  const stickClass = s => s >= 70 ? 'high' : s >= 40 ? 'mid' : 'low';
+  const stickEmoji = s => s >= 75 ? '🔥' : s >= 60 ? '📈' : s >= 40 ? '📊' : '🔉';
+  const fmtDuration = ms => { if (!ms) return '—'; const m = Math.floor(ms/60000); const s = Math.floor((ms%60000)/1000); return `${m}:${String(s).padStart(2,'0')}`; };
+  const fmtReleaseDate = d => { if (!d) return ''; const yr = d.slice(0,4); return yr === String(new Date().getFullYear()) ? '🆕 ' + d : yr; };
+
+  list.innerHTML = `<div class="scout-grid">${tracks.map(t => {
+    const sc = Number(t.stickiness_score) || 0;
+    const cls = stickClass(sc);
+    return `
+      <div class="scout-card">
+        ${t.album_art
+          ? `<img class="scout-card-art" src="${esc(t.album_art)}" alt="${esc(t.track_name)}" loading="lazy">`
+          : `<div class="scout-card-art" style="display:flex;align-items:center;justify-content:center;font-size:36px">🎵</div>`
+        }
+        <div class="scout-card-body">
+          <div class="scout-track-name" title="${esc(t.track_name)}">${esc(t.track_name || '—')}</div>
+          <div class="scout-artist">${esc(t.artist_name || '—')}</div>
+          <div style="margin:6px 0 2px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:11px;color:var(--ink3)">Stickiness</span>
+              <span class="stick-score ${cls}">${stickEmoji(sc)} ${sc}</span>
+            </div>
+            <div class="stick-bar"><div class="stick-fill ${cls}" style="width:${sc}%"></div></div>
+          </div>
+          <div class="scout-meta">
+            ${t.market ? `<span class="badge-mkt" style="font-size:10px">${esc(t.market)}</span>` : ''}
+            ${t.is_t1_trending ? '<span class="val-badge rev-premium" style="font-size:10px">T1 Trending</span>' : ''}
+            ${t.genre ? `<span style="font-size:11px;color:var(--ink3);font-style:italic">${esc(t.genre)}</span>` : ''}
+          </div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:4px">
+            ${fmtReleaseDate(t.release_date)} · ${fmtDuration(t.duration_ms)} · pop ${t.popularity || '?'}
+          </div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(t.playlist_name)}">
+            from: ${esc(t.playlist_name || '—')}
+          </div>
+        </div>
+        <div class="scout-card-footer">
+          ${t.spotify_url
+            ? `<a class="btn primary" href="${esc(t.spotify_url)}" target="_blank" rel="noopener" style="flex:1;text-align:center;text-decoration:none">▶ Quick Pitch</a>`
+            : `<a class="btn primary" href="https://open.spotify.com/track/${esc(t.track_id)}" target="_blank" rel="noopener" style="flex:1;text-align:center;text-decoration:none">▶ Quick Pitch</a>`
+          }
+        </div>
+      </div>`;
+  }).join('')}</div>
+  <div style="margin-top:12px;font-size:12px;color:var(--ink3);text-align:right">${tracks.length} tracks · sorted by Stickiness Score</div>`;
+}
+
+// ── Crawl Expand buttons ──────────────────────────────────────────
+async function doExpandPlaylists() {
+  const btn = el('crawl-expand-pl-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Expanding…'; }
+  try {
+    await api('/api/crawl/expand/playlists', { method: 'POST' });
+    showToast('+10 playlist expansion crawl started', 'success');
+    refreshCrawlStatus();
+  } catch(e) { showToast('Failed: ' + e.message, 'error'); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = '+10 Playlists'; } }
+}
+
+async function doExpandKeywords() {
+  const btn = el('crawl-expand-kw-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Expanding…'; }
+  try {
+    await api('/api/crawl/expand/keywords', { method: 'POST' });
+    showToast('+10 keyword variations added and queued', 'success');
+    refreshCrawlStatus();
+  } catch(e) { showToast('Failed: ' + e.message, 'error'); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = '+10 Keywords'; } }
 }
 
 // ── Crawl / Research Engine ───────────────────────────────────────
