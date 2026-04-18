@@ -788,7 +788,7 @@ async function runCrawl() {
               !tgSettings.excludedCountries.has(kw.market)
             ) {
               const tMsg = [
-                `🎯 <b>Top 15 Entry</b>`,
+                `🚀 <b>ALPHA — Top 15 Entry</b>`,
                 ``,
                 `📋 <b>${playlist.name}</b>`,
                 `🔑 Keyword: <i>${kw.term}</i>`,
@@ -1860,7 +1860,14 @@ app.get('/api/acquisition', async (req, res) => {
           (cs.position <= 3 AND k.market IN ('US','GB','UK','DK','IS','NO','MC','FI','CH','IE','LI','SE','NZ','LU','AD','NL','AU','AT','DE','FR','BE','CA','CY','IL','HK','EE','MT','SG','AE','ES','CZ','IT','LT','GR','HU','RO','SK','UY','PT','BR','MX')) AS has_rev_premium,
           (cs.genre ILIKE '%sleep%' OR cs.genre ILIKE '%lo-fi%' OR cs.genre ILIKE '%lofi%'
            OR cs.genre ILIKE '%ambient%' OR cs.genre ILIKE '%study%' OR cs.genre ILIKE '%focus%'
-           OR cs.genre ILIKE '%relax%' OR cs.genre ILIKE '%meditation%' OR cs.genre ILIKE '%chill%') AS has_ltv_bonus
+           OR cs.genre ILIKE '%relax%' OR cs.genre ILIKE '%meditation%' OR cs.genre ILIKE '%chill%') AS has_ltv_bonus,
+          -- Alpha flag: Opp Score > 80 AND T1/T2 AND 500+ followers
+          (
+            ROUND(((6 - cs.position) * 15.0) + GREATEST(0, (5000 - COALESCE(cs.followers,0))::float / 100)) > 80
+            AND k.market IN ('US','GB','UK','DK','IS','NO','MC','FI','CH','IE','LI','SE','NZ','LU','AD','NL','AU','AT','DE','FR','BE',
+                             'CA','CY','IL','HK','EE','MT','SG','AE','ES','CZ','IT','LT','GR','HU','RO','SK','UY','PT','BR','MX')
+            AND cs.followers >= 500
+          ) AS is_alpha
         FROM curator_snapshots cs
         JOIN keywords k ON k.id = cs.keyword_id
         WHERE cs.position BETWEEN 1 AND 10
@@ -1895,13 +1902,15 @@ app.get('/api/acquisition', async (req, res) => {
 app.get('/api/leads', async (req, res) => {
   try {
     const minFollowers = Math.max(0, Number(req.query.min_followers) || 1000);
-    const genreFilter  = req.query.genre || '';
-    const marketFilter = req.query.market || '';
+    const genreFilter  = req.query.genre   || '';
+    const marketFilter = req.query.market  || '';
+    const limit        = Math.min(2000, Math.max(50, Number(req.query.limit) || 500));
 
     const params = [minFollowers];
     let extraWhere = `AND cs.followers >= $1`;
     if (genreFilter)  { params.push(`%${genreFilter}%`);  extraWhere += ` AND cs.genre ILIKE $${params.length}`; }
     if (marketFilter) { params.push(marketFilter);         extraWhere += ` AND k.market = $${params.length}`; }
+    params.push(limit); // final param for LIMIT
 
     const { rows } = await pool.query(`
       WITH ranked_contacts AS (
@@ -1957,7 +1966,7 @@ app.get('/api/leads', async (req, res) => {
       LEFT JOIN acquisition_crm ac ON ac.spotify_id = rc.spotify_id
       LEFT JOIN follower_swing fs ON fs.spotify_id = rc.spotify_id
       ORDER BY influence_count DESC, rc.position ASC
-      LIMIT 500
+      LIMIT $${params.length}
     `, params);
     res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -2206,6 +2215,78 @@ app.post('/api/intel/refresh', async (req, res) => {
   }
 });
 
+// ── SEO Pivot Engine ─────────────────────────────────────────────────────────
+
+app.get('/api/seo-pivot', async (req, res) => {
+  try {
+    // Get tracked keywords with their current ranking position and traffic intel
+    const { rows: tracked } = await pool.query(`
+      SELECT DISTINCT ON (k.id)
+        k.id, k.term, k.market,
+        COALESCE(ki.traffic_score, 1) AS traffic_score,
+        COALESCE(ki.growth_pct, 0)    AS growth_pct,
+        COALESCE(ki.competition, 1.0) AS competition,
+        COALESCE(rh_recent.position, 99) AS current_position
+      FROM keywords k
+      LEFT JOIN keyword_intel ki ON ki.term = k.term AND ki.market = k.market
+      LEFT JOIN LATERAL (
+        SELECT rh.position FROM rank_history rh
+        JOIN playlists p ON p.id = rh.playlist_id
+        WHERE rh.keyword_id = k.id
+        ORDER BY rh.checked_at DESC LIMIT 1
+      ) rh_recent ON TRUE
+      ORDER BY k.id
+    `);
+
+    // Get alternative high-traffic keywords not yet tracked
+    const { rows: alternatives } = await pool.query(`
+      SELECT ki.term, ki.market, ki.traffic_score, ki.growth_pct,
+             COALESCE(ki.competition, 1.0) AS competition
+      FROM keyword_intel ki
+      WHERE ki.traffic_score > 0
+        AND NOT EXISTS (SELECT 1 FROM keywords k2 WHERE k2.term = ki.term AND k2.market = ki.market)
+      ORDER BY ki.traffic_score DESC, ki.growth_pct DESC
+      LIMIT 200
+    `);
+
+    // Generate pivot suggestions — only for stagnant keywords (pos > 5)
+    const pivots = [];
+    for (const kw of tracked) {
+      if (Number(kw.current_position) > 5) {
+        const alts = alternatives
+          .filter(a => a.market === kw.market && Number(a.traffic_score) > Number(kw.traffic_score))
+          .sort((a, b) => (Number(b.traffic_score) - Number(a.traffic_score)) - (Number(a.competition) - Number(b.competition)))
+          .slice(0, 3);
+
+        for (const alt of alts) {
+          const fromTraffic = Number(kw.traffic_score) || 1;
+          const toTraffic   = Number(alt.traffic_score) || 1;
+          const trafficGainPct = Math.round(((toTraffic - fromTraffic) / fromTraffic) * 100);
+          const easeScore      = Math.round((1 - Math.min(1, Number(alt.competition))) * 100);
+          pivots.push({
+            from_term:        kw.term,
+            from_market:      kw.market,
+            from_traffic:     fromTraffic,
+            from_position:    Number(kw.current_position),
+            to_term:          alt.term,
+            to_market:        alt.market,
+            to_traffic:       toTraffic,
+            to_growth:        Number(alt.growth_pct),
+            to_competition:   Number(alt.competition),
+            traffic_gain_pct: trafficGainPct,
+            ease_score:       easeScore,
+          });
+        }
+      }
+    }
+
+    pivots.sort((a, b) => b.traffic_gain_pct - a.traffic_gain_pct);
+    res.json(pivots.slice(0, 40));
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── Daily Report ─────────────────────────────────────────────────────────────
 
 app.get('/api/daily-report', async (req, res) => {
@@ -2259,8 +2340,12 @@ app.get('/api/daily-report', async (req, res) => {
       ORDER BY cs.spotify_id, cs.position ASC, cs.followers DESC
       LIMIT 80
     `, [T1T2_MARKETS]);
-    // Filter to Excellent Opportunities (opp_score > 80) then take top 10
-    const dmTargets = dmRaw.filter(r => Number(r.opp_score) > 80).slice(0, 10);
+    // Filter to Excellent Opportunities (opp_score > 80), flag as alpha, sort alpha-first
+    const dmFiltered = dmRaw
+      .filter(r => Number(r.opp_score) > 80)
+      .map(r => ({ ...r, is_alpha: true }))
+      .sort((a, b) => Number(b.opp_score) - Number(a.opp_score));
+    const dmTargets = dmFiltered.slice(0, 10);
 
     // Top 10 trending keywords by traffic score
     const { rows: trending } = await pool.query(`
@@ -2646,34 +2731,54 @@ async function deepResearchGenre(genre, market, perPage = 20) {
 
 // ── Song Scout Engine ─────────────────────────────────────────────────────────
 
-function computeStickinessScore(popularity, releaseDateStr) {
+// SongScore 2.0: Popularity (40%) + Growth Velocity (30%) + Genre Alignment (30%)
+function computeSongScore(popularity, releaseDateStr, genre, trackedGenres) {
   const pop = Number(popularity) || 0;
+  // Growth Velocity: recency-based proxy — 100 at release day, 0 at day 300
   const daysOld = releaseDateStr
     ? Math.max(0, (Date.now() - new Date(releaseDateStr + (releaseDateStr.length <= 7 ? '-01' : '')).getTime()) / 86400000)
     : 365;
-  // Recency: full score at day 0, zero at day 300
-  const recency = Math.max(0, 100 - (daysOld / 3));
-  return Math.min(100, Math.round(pop * 0.6 + recency * 0.4));
+  const growthVelocity = Math.max(0, 100 - (daysOld / 3));
+  // Genre Alignment: match against tracked target genres
+  let genreAlignment = 50; // neutral when no genre info
+  if (genre && trackedGenres && trackedGenres.length) {
+    const g = genre.toLowerCase();
+    const matched = trackedGenres.some(tg => g.includes(tg.toLowerCase()) || tg.toLowerCase().includes(g));
+    genreAlignment = matched ? 100 : 25;
+  }
+  return Math.min(100, Math.round(pop * 0.4 + growthVelocity * 0.3 + genreAlignment * 0.3));
 }
 
 let scoutRunning = false;
-async function scoutRefresh() {
+async function scoutRefresh(playlistId, playlistGenre, playlistMarket) {
   if (scoutRunning) { console.log('[scout] already running'); return; }
   scoutRunning = true;
   console.log('[scout] Refreshing track data from top T1/T2 playlists');
   try {
+    // Fetch tracked genres from DB for genre alignment scoring
+    const { rows: genreRows } = await pool.query(`SELECT name FROM target_genres ORDER BY name`);
+    const trackedGenres = genreRows.map(r => r.name);
+
     const t1t2 = [...TIER1, ...TIER2];
-    const { rows: topPlaylists } = await pool.query(`
-      SELECT DISTINCT ON (cs.spotify_id)
-        cs.spotify_id, cs.playlist_name, cs.followers, cs.genre, k.market
-      FROM curator_snapshots cs
-      JOIN keywords k ON k.id = cs.keyword_id
-      WHERE k.market = ANY($1)
-        AND cs.position <= 5
-        AND cs.followers > 5000
-      ORDER BY cs.spotify_id, cs.followers DESC
-      LIMIT 20
-    `, [t1t2]);
+
+    // If a specific playlist is provided (from /api/scout/more), only fetch that one
+    let topPlaylists;
+    if (playlistId) {
+      topPlaylists = [{ spotify_id: playlistId, playlist_name: null, followers: 0, genre: playlistGenre || null, market: playlistMarket || 'US' }];
+    } else {
+      const { rows } = await pool.query(`
+        SELECT DISTINCT ON (cs.spotify_id)
+          cs.spotify_id, cs.playlist_name, cs.followers, cs.genre, k.market
+        FROM curator_snapshots cs
+        JOIN keywords k ON k.id = cs.keyword_id
+        WHERE k.market = ANY($1)
+          AND cs.position <= 5
+          AND cs.followers > 5000
+        ORDER BY cs.spotify_id, cs.followers DESC
+        LIMIT 20
+      `, [t1t2]);
+      topPlaylists = rows;
+    }
 
     for (const pl of topPlaylists) {
       try {
@@ -2686,7 +2791,7 @@ async function scoutRefresh() {
         for (const item of items) {
           const t = item?.track;
           if (!t || !t.id) continue;
-          const score = computeStickinessScore(t.popularity, t.album?.release_date);
+          const score = computeSongScore(t.popularity, t.album?.release_date, pl.genre, trackedGenres);
           await pool.query(`
             INSERT INTO scout_tracks
               (track_id,track_name,artist_name,artist_id,album_art,popularity,release_date,
@@ -2714,7 +2819,7 @@ async function scoutRefresh() {
 }
 
 app.get('/api/scout', async (req, res) => {
-  const { market, genre, min_score = 0, limit = 80 } = req.query;
+  const { market, genre, min_score = 0, limit = 80, sort = 'songscore' } = req.query;
   try {
     const params = [];
     const conds  = [];
@@ -2722,9 +2827,15 @@ app.get('/api/scout', async (req, res) => {
     if (genre)                { params.push(`%${genre}%`);      conds.push(`genre ILIKE $${params.length}`); }
     if (Number(min_score) > 0){ params.push(Number(min_score)); conds.push(`stickiness_score>=$${params.length}`); }
     const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
+    const orderBy = sort === 'newest'     ? 'discovered_at DESC' :
+                    sort === 'popularity' ? 'popularity DESC'    :
+                    'stickiness_score DESC';
     params.push(Number(limit));
+    // Subquery: deduplicate per track_id (highest score wins), then re-sort + limit
     const { rows } = await pool.query(
-      `SELECT DISTINCT ON (track_id) * FROM scout_tracks ${where} ORDER BY track_id, stickiness_score DESC LIMIT $${params.length}`,
+      `SELECT * FROM (
+         SELECT DISTINCT ON (track_id) * FROM scout_tracks ${where} ORDER BY track_id, stickiness_score DESC
+       ) deduped ORDER BY ${orderBy} LIMIT $${params.length}`,
       params
     );
     if (!rows.length) scoutRefresh().catch(console.error); // lazy-load
@@ -2735,6 +2846,68 @@ app.get('/api/scout', async (req, res) => {
 app.post('/api/scout/refresh', (req, res) => {
   res.json({ ok: true, message: 'Scout refresh started' });
   scoutRefresh().catch(console.error);
+});
+
+// Add +10 tracks from a new playlist into scout
+app.post('/api/scout/more', async (req, res) => {
+  const { playlist_id, genre, market } = req.body || {};
+  if (playlist_id) {
+    // Scout a specific playlist immediately
+    res.json({ ok: true, message: `Fetching tracks from playlist ${playlist_id}` });
+    scoutRefresh(playlist_id, genre, market).catch(console.error);
+    return;
+  }
+  // No playlist specified — fetch a new batch from top playlists not yet scouted
+  res.json({ ok: true, message: '+10 tracks expansion started' });
+  (async () => {
+    const { rows: genreRows } = await pool.query(`SELECT name FROM target_genres ORDER BY name`);
+    const trackedGenres = genreRows.map(r => r.name);
+    const t1t2 = [...TIER1, ...TIER2];
+    const { rows: newPlaylists } = await pool.query(`
+      SELECT DISTINCT ON (cs.spotify_id)
+        cs.spotify_id, cs.playlist_name, cs.followers, cs.genre, k.market
+      FROM curator_snapshots cs
+      JOIN keywords k ON k.id = cs.keyword_id
+      WHERE k.market = ANY($1)
+        AND cs.position <= 10
+        AND cs.followers > 1000
+        AND cs.spotify_id NOT IN (SELECT DISTINCT playlist_id FROM scout_tracks)
+      ORDER BY cs.spotify_id, cs.followers DESC
+      LIMIT 5
+    `, [t1t2]);
+    for (const pl of newPlaylists) {
+      try {
+        await sleep(350);
+        const data = await spotifyGet(
+          `/playlists/${pl.spotify_id}/tracks?limit=20&fields=items(track(id,name,artists,album(images,release_date),popularity,duration_ms,external_urls))`
+        );
+        const items = data?.items || [];
+        const isT1  = TIER1.includes(pl.market);
+        for (const item of items) {
+          const t = item?.track;
+          if (!t || !t.id) continue;
+          const score = computeSongScore(t.popularity, t.album?.release_date, pl.genre, trackedGenres);
+          await pool.query(`
+            INSERT INTO scout_tracks
+              (track_id,track_name,artist_name,artist_id,album_art,popularity,release_date,
+               duration_ms,playlist_id,playlist_name,playlist_followers,market,genre,
+               stickiness_score,is_t1_trending,spotify_url,discovered_at)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,NOW())
+            ON CONFLICT (track_id,playlist_id) DO NOTHING
+          `, [
+            t.id, t.name, t.artists?.[0]?.name||'', t.artists?.[0]?.id||'',
+            t.album?.images?.[0]?.url||null, t.popularity||0,
+            t.album?.release_date||null, t.duration_ms||0,
+            pl.spotify_id, pl.playlist_name, pl.followers||0, pl.market,
+            pl.genre||null, score, isT1,
+            t.external_urls?.spotify||null,
+          ]);
+        }
+      } catch(e) {
+        console.error(`[scout-more] ${pl.spotify_id}:`, e.message);
+      }
+    }
+  })().catch(console.error);
 });
 
 // ── Selective Crawl Endpoints ─────────────────────────────────────────────────

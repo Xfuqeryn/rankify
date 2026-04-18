@@ -90,7 +90,7 @@
 
     body {
       font-family: var(--ff-ui);
-      font-size: 17px; /* 1.25× from 14px base */
+      font-size: 18px; /* 1.3× from 14px base */
       color: var(--ink);
       background: var(--surface2);
       display: flex;
@@ -1981,6 +1981,70 @@
       .metric-card { padding: 11px 12px; }
       .metric-value { font-size: 22px; }
     }
+
+    /* ── Alpha badges & cards ────────────────────────────────────── */
+    .alpha-card {
+      border: 1.5px solid #f59e0b !important;
+      box-shadow: 0 0 0 3px rgba(245,158,11,0.10);
+    }
+    .alpha-badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      background: #f59e0b; color: #000;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.5px;
+      padding: 2px 7px; border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    /* ── Tier filter pills ───────────────────────────────────────── */
+    .tier-pill-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .tier-pill {
+      padding: 4px 12px; border-radius: var(--rpill); font-size: 12px; font-weight: 600;
+      border: 0.5px solid var(--border2); cursor: pointer; transition: all 0.12s;
+      color: var(--ink2); background: var(--surface);
+    }
+    .tier-pill:hover { background: var(--surface3); }
+    .tier-pill.active { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+    .tier-pill.t1 { }
+    .tier-pill.t2 { }
+    .tier-pill.t3 { }
+
+    /* ── Quick-Sync topbar button ────────────────────────────────── */
+    .quick-sync-btn {
+      display: flex; align-items: center; gap: 5px;
+      background: var(--surface2); border: 0.5px solid var(--border2);
+      border-radius: var(--rpill); padding: 5px 12px;
+      font-size: 12.5px; font-weight: 500; color: var(--ink2);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .quick-sync-btn:hover { border-color: var(--ink3); color: var(--ink); }
+    .quick-sync-btn.spinning svg { animation: spin 1s linear infinite; }
+
+    /* ── SEO Pivot view ──────────────────────────────────────────── */
+    .pivot-card {
+      background: var(--surface); border: 0.5px solid var(--border2);
+      border-radius: var(--rlg); padding: 16px 18px;
+      display: flex; flex-direction: column; gap: 10px;
+      transition: box-shadow 0.15s;
+    }
+    .pivot-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+    .pivot-arrow {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .pivot-kw {
+      background: var(--surface2); border-radius: var(--r);
+      padding: 6px 12px; font-size: 13px; font-weight: 600;
+    }
+    .pivot-arrow-icon { font-size: 18px; color: var(--ink3); flex-shrink: 0; }
+    .pivot-kw.to { background: var(--green-bg); color: var(--green); }
+    .pivot-stats { display: flex; gap: 10px; flex-wrap: wrap; }
+    .pivot-stat { font-size: 12px; color: var(--ink2); }
+    .pivot-stat strong { color: var(--ink); }
+    .pivot-gain {
+      font-size: 13px; font-weight: 700; color: var(--green);
+    }
+    .pivot-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px;
+    }
   </style>
 </head>
 <body>
@@ -2095,6 +2159,10 @@
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1 13l4-7 3 3 3-5 3 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="3.5" r="1.5" stroke="currentColor" stroke-width="1.3"/></svg>
       Song Scout
     </div>
+    <div class="nav-item" data-view="pivot" onclick="navigate('pivot')">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1.5 12.5l4-8 4 4 4-7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      SEO Pivot
+    </div>
     <div class="nav-item" data-view="leads" onclick="navigate('leads')">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 13c0-3 2.5-4.5 5.5-4.5S13 10 13 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M10.5 7l1 1 2-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Leads
@@ -2132,7 +2200,11 @@
     <select class="market-pill" id="market-filter" onchange="onMarketChange(this.value)">
       <option value="">All Markets</option>
     </select>
-    <button class="btn sm" onclick="openDailyReport()" title="Daily Report" style="margin-left:auto">
+    <button class="quick-sync-btn" id="quick-sync-btn" onclick="doQuickSync()" title="Quick-Sync current view" style="margin-left:auto">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1A5.5 5.5 0 111 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M1 2.5V1h1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      ↻ Sync
+    </button>
+    <button class="btn sm" onclick="openDailyReport()" title="Daily Report">
       📋 Report
     </button>
     <button class="btn sm" onclick="toggleDashCustomize()" title="Customize Dashboard">
@@ -2256,6 +2328,13 @@
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <input class="input" id="rankings-search" placeholder="Search…" style="width:160px" oninput="renderRankings()" />
+          <!-- Tier filter pills -->
+          <div class="tier-pill-group">
+            <button class="tier-pill active" id="rank-tier-all" onclick="setRankingsTier('')">All</button>
+            <button class="tier-pill t1" id="rank-tier-t1" onclick="setRankingsTier('T1')">T1</button>
+            <button class="tier-pill t2" id="rank-tier-t2" onclick="setRankingsTier('T2')">T2</button>
+            <button class="tier-pill t3" id="rank-tier-t3" onclick="setRankingsTier('T3')">T3</button>
+          </div>
           <select class="select" id="rankings-market-filter" style="width:90px" onchange="renderRankings()">
             <option value="">Market</option>
           </select>
@@ -2457,8 +2536,8 @@
     <div class="view" data-view="scout" id="view-scout">
       <div class="flex-between section-gap" style="flex-wrap:wrap;gap:10px">
         <div>
-          <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">A&R Song Scout</div>
-          <div class="text-muted" style="margin-top:3px">Stickiness Score = Popularity (60%) + Recency (40%) · Tracks from top T1/T2 playlists</div>
+          <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">A&R Scout 2.0</div>
+          <div class="text-muted" style="margin-top:3px">SongScore = Popularity (40%) + Growth Velocity (30%) + Genre Alignment (30%)</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <select class="select" id="scout-market" style="width:90px" onchange="loadScout()">
@@ -2474,11 +2553,67 @@
             <option value="60">60+ Hot</option>
             <option value="75">75+ Fire 🔥</option>
           </select>
-          <button class="btn primary" onclick="refreshScout()">↻ Refresh Tracks</button>
+          <select class="select" id="scout-sort" style="width:130px" onchange="loadScout()">
+            <option value="songscore">↓ SongScore</option>
+            <option value="popularity">↓ Popularity</option>
+            <option value="newest">↓ Newest First</option>
+          </select>
+          <button class="btn primary" onclick="refreshScout()">↻ Refresh</button>
         </div>
       </div>
+
+      <!-- Add Playlist / Add Genre inline inputs -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+        <div class="panel glass-panel" style="flex:1;min-width:240px;padding:14px 16px">
+          <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:8px">🎵 Add Playlist to Scout</div>
+          <div style="display:flex;gap:8px">
+            <input class="input" id="scout-playlist-id" placeholder="Spotify Playlist ID or URL" style="flex:1" onkeydown="if(event.key==='Enter')doScoutAddPlaylist()" />
+            <select class="select" id="scout-playlist-market" style="width:70px">
+              <option value="US">US</option><option value="GB">GB</option>
+              <option value="DE">DE</option><option value="FR">FR</option>
+              <option value="NL">NL</option><option value="AU">AU</option>
+            </select>
+            <button class="btn primary" onclick="doScoutAddPlaylist()">Scout</button>
+          </div>
+        </div>
+        <div class="panel glass-panel" style="flex:1;min-width:240px;padding:14px 16px">
+          <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:8px">🎸 Add Genre to Scout</div>
+          <div style="display:flex;gap:8px">
+            <input class="input" id="scout-genre-input" placeholder="e.g. dark phonk, ambient" style="flex:1" onkeydown="if(event.key==='Enter')doScoutAddGenre()" />
+            <select class="select" id="scout-genre-market" style="width:70px">
+              <option value="US">US</option><option value="GB">GB</option>
+              <option value="DE">DE</option><option value="FR">FR</option>
+              <option value="NL">NL</option><option value="AU">AU</option>
+            </select>
+            <button class="btn primary" onclick="doScoutAddGenre()">Scout</button>
+          </div>
+        </div>
+      </div>
+
       <div id="scout-tracks-list">
         <div class="panel-empty" style="padding:60px 0">Loading song data… first refresh may take a moment.</div>
+      </div>
+      <div style="margin-top:12px;text-align:center">
+        <button class="btn sm" id="scout-more-btn" onclick="doScoutMore()">+ 10 More Tracks</button>
+      </div>
+    </div>
+
+    <!-- ── SEO PIVOT ──────────────────────────────────────────── -->
+    <div class="view" data-view="pivot" id="view-pivot">
+      <div class="flex-between section-gap" style="flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">SEO Pivot Engine</div>
+          <div class="text-muted" style="margin-top:3px">Compare stagnant keywords against high-traffic alternatives · click to add pivot target</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="select" id="pivot-market-filter" style="width:100px" onchange="renderPivot()">
+            <option value="">All Markets</option>
+          </select>
+          <button class="btn primary" onclick="loadPivot()">↻ Refresh</button>
+        </div>
+      </div>
+      <div id="pivot-list">
+        <div class="panel-empty" style="padding:60px 0">Loading SEO pivot suggestions…</div>
       </div>
     </div>
 
@@ -2792,14 +2927,33 @@
     <div class="view" data-view="leads" id="view-leads">
       <div class="flex-between section-gap">
         <div>
-          <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Lead CRM</div>
+          <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Lead CRM 2.0</div>
           <div class="text-muted" style="margin-top:3px">Sorted by Market Influence — curators owning the most top-10 spots</div>
         </div>
-        <button class="btn sm" onclick="exportLeadsCSV()">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v7M3.5 5.5L6 8l2.5-2.5M1.5 9.5v1a.5.5 0 00.5.5h8a.5.5 0 00.5-.5v-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Export CSV
-        </button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn sm" onclick="exportLeadsCSV()">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v7M3.5 5.5L6 8l2.5-2.5M1.5 9.5v1a.5.5 0 00.5.5h8a.5.5 0 00.5-.5v-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Export CSV
+          </button>
+        </div>
       </div>
+
+      <!-- Add Genre to Leads CRM -->
+      <div class="panel glass-panel section-gap" style="padding:14px 16px">
+        <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:8px">🎸 Add Genre to Leads</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input class="input" id="leads-genre-add-input" placeholder="e.g. dark phonk, ambient" style="flex:1;min-width:160px" onkeydown="if(event.key==='Enter')addGenreFromLeads()" />
+          <select class="select" id="leads-genre-add-market" style="width:80px">
+            <option value="US">US</option><option value="GB">GB</option>
+            <option value="DE">DE</option><option value="FR">FR</option>
+            <option value="NL">NL</option><option value="AU">AU</option>
+            <option value="SE">SE</option><option value="CA">CA</option>
+            <option value="BR">BR</option><option value="ES">ES</option>
+          </select>
+          <button class="btn primary" onclick="addGenreFromLeads()">+ Add Genre</button>
+        </div>
+      </div>
+
       <div class="panel">
         <!-- Filter bar -->
         <div class="filter-bar" id="leads-filter-bar">
@@ -2815,9 +2969,13 @@
           <select class="select" id="leads-genre-filter" style="width:140px" onchange="loadLeads()">
             <option value="">All Genres</option>
           </select>
-          <select class="select" id="leads-market-filter" style="width:100px" onchange="renderLeads()">
-            <option value="">All Markets</option>
-          </select>
+          <!-- Tier filter pills replacing All Countries market select -->
+          <div class="tier-pill-group">
+            <button class="tier-pill active" id="leads-tier-all" onclick="setLeadsTier('')">All</button>
+            <button class="tier-pill t1" id="leads-tier-t1" onclick="setLeadsTier('T1')">T1</button>
+            <button class="tier-pill t2" id="leads-tier-t2" onclick="setLeadsTier('T2')">T2</button>
+            <button class="tier-pill t3" id="leads-tier-t3" onclick="setLeadsTier('T3')">T3</button>
+          </div>
           <span class="filter-count" id="leads-count"></span>
           <button class="mobile-filter-btn" id="leads-mobile-filter-btn" onclick="openFilterDrawer('leads')">
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 3.5h10M3.5 6.5h6M5.5 9.5h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
@@ -2841,6 +2999,13 @@
             </thead>
             <tbody id="leads-tbody"></tbody>
           </table>
+        </div>
+        <!-- Expansion buttons -->
+        <div style="padding:10px 16px;border-top:0.5px solid var(--border);display:flex;gap:8px;align-items:center">
+          <span style="font-size:12px;color:var(--ink3)">Load more leads:</span>
+          <button class="btn sm" onclick="expandLeads(10)">+10</button>
+          <button class="btn sm" onclick="expandLeads(20)">+20</button>
+          <button class="btn sm" onclick="expandLeads(50)">+50</button>
         </div>
       </div>
     </div>
@@ -3161,8 +3326,10 @@ const S = {
   acquisition: [],
   genres: [],
   scoutAlerts: [],
-  leadsSort: { key: 'influence_count', dir: -1 },
-  acqSort:   { key: 'opportunity_score', dir: -1 },
+  leadsSort:    { key: 'influence_count', dir: -1 },
+  acqSort:      { key: 'opportunity_score', dir: -1 },
+  rankingsTier: '',
+  leadsTier:    '',
   syncPollTimer: null,
   notionConnected: localStorage.getItem('notion_connected') === 'true',
   dashAlerts: [],
@@ -3284,10 +3451,10 @@ function navigate(view) {
   const titles = {
     dashboard:'Dashboard', rankings:'Rankings', opportunities:'Opportunities',
     alerts:'Alerts', playlists:'Playlists', keywords:'Keywords', settings:'Settings',
-    trends:'Trends', 'market-map':'Market Map', leads:'Lead CRM',
+    trends:'Trends', 'market-map':'Market Map', leads:'Lead CRM 2.0',
     acquisition:'Acquisition Scout', genres:'Target Genres', discovery:'Keyword Discovery',
     monitor:'Monitor', seasonal:'Seasonal Opportunities', crawl:'Research Engine',
-    scout:'Song Scout',
+    scout:'A&R Scout 2.0', pivot:'SEO Pivot Engine',
   };
   el('page-title').textContent = titles[view] || view;
   const contentEl = document.querySelector('.content');
@@ -3309,6 +3476,7 @@ function navigate(view) {
   if (view === 'seasonal')      loadSeasonal();
   if (view === 'crawl')         loadCrawl();
   if (view === 'scout')         loadScout();
+  if (view === 'pivot')         loadPivot();
 }
 
 // ── Init ─────────────────────────────────────────────────────────
@@ -3641,6 +3809,10 @@ function renderRankings() {
   if (q)        rows = rows.filter(r => (r.term||'').toLowerCase().includes(q) || (r.playlist_name||'').toLowerCase().includes(q));
   if (mkt)      rows = rows.filter(r => r.market === mkt);
   if (maxPos)   rows = rows.filter(r => (r.position || 999) <= maxPos);
+  // Tier filter
+  if (S.rankingsTier === 'T1') rows = rows.filter(r => TIER1_MARKETS.includes(r.market));
+  else if (S.rankingsTier === 'T2') rows = rows.filter(r => TIER2_MARKETS.includes(r.market));
+  else if (S.rankingsTier === 'T3') rows = rows.filter(r => TIER3_MARKETS.includes(r.market));
 
   const tbody = el('rankings-tbody');
   if (!rows.length) {
@@ -4247,8 +4419,6 @@ async function loadLeads() {
     // Populate genre filter from tracked genres (server-filtered, so repopulate from returned data)
     const genreOpts = S.genres?.map(g => `<option value="${esc(g.name)}"${g.name === genre ? ' selected' : ''}>${esc(g.name)}</option>`).join('') || '';
     el('leads-genre-filter').innerHTML  = '<option value="">All Genres</option>' + genreOpts;
-    const markets = [...new Set(S.leads.map(l => l.market).filter(Boolean))].sort();
-    el('leads-market-filter').innerHTML = '<option value="">All Markets</option>' + markets.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('');
     renderLeads();
   } catch (e) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--red)">Failed to load leads.</td></tr>`;
@@ -4269,13 +4439,15 @@ function renderLeads() {
   const tbody   = el('leads-tbody');
   const q       = (el('leads-search')?.value || '').toLowerCase();
   const genre   = el('leads-genre-filter')?.value  || '';
-  const market  = el('leads-market-filter')?.value || '';
 
   let rows = [...(S.leads || [])];
   if (q)              rows = rows.filter(l => (l.owner || '').toLowerCase().includes(q) || (l.playlist_name || '').toLowerCase().includes(q));
   if (genre)          rows = rows.filter(l => l.genre  === genre);
-  if (market)         rows = rows.filter(l => l.market === market);
   if (S.leadsFavOnly) rows = rows.filter(l => S.favorites.has(l.spotify_id));
+  // Tier filter (replaces market dropdown)
+  if (S.leadsTier === 'T1')      rows = rows.filter(l => TIER1_MARKETS.includes(l.market));
+  else if (S.leadsTier === 'T2') rows = rows.filter(l => TIER2_MARKETS.includes(l.market));
+  else if (S.leadsTier === 'T3') rows = rows.filter(l => TIER3_MARKETS.includes(l.market));
 
   const { key, dir } = S.leadsSort;
   rows.sort((a, b) => (Number(a[key] ?? 0) - Number(b[key] ?? 0)) * dir);
@@ -4497,13 +4669,14 @@ function renderAcquisition() {
 
     // ── Desktop table row ───────────────────────────────────────
     tableRows.push(`
-      <tr class="${isHot ? 'hot-asset' : ''}">
+      <tr class="${isHot ? 'hot-asset' : ''}${r.is_alpha ? ' alpha-card' : ''}" style="${r.is_alpha ? 'border-left:3px solid #f59e0b' : ''}">
         <td>
           <div style="display:flex;align-items:flex-start;gap:6px">
             ${favBtn(r.spotify_id, 'renderAcquisition')}
             <div style="min-width:0">
               <div class="td-name" style="max-width:130px">${esc(r.playlist_name || '—')}</div>
               <div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap;align-items:center">
+                ${r.is_alpha ? '<span class="alpha-badge">🚀 ALPHA</span>' : ''}
                 ${isHot ? '<span class="hot-asset-label">🔥 Hot Asset</span>' : ''}
                 ${autoFlag ? '<span class="autoflag">⚡ Auto-Flag</span>' : ''}
                 ${hasContact ? '<span style="font-size:10px;color:var(--green);font-weight:600">● contact</span>' : ''}
@@ -5369,18 +5542,20 @@ async function openDailyReport() {
           `).join('')}
       </div>
       <div class="report-section">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink3);margin-bottom:8px">📬 Top 10 DM Targets</div>
-        ${!data.dmTargets.length ? '<div class="panel-empty">No contactable curators found.</div>' :
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink3);margin-bottom:8px">🚀 Alpha DM Targets (Opp Score &gt; 80 · T1/T2)</div>
+        ${!data.dmTargets.length ? '<div class="panel-empty">No alpha targets found.</div>' :
           data.dmTargets.map((d, i) => {
             const ci = d.contact_info || {};
             const email = (ci.emails || [])[0];
             const ig    = (ci.instagrams || [])[0];
             return `
-              <div class="report-row">
+              <div class="report-row${d.is_alpha ? ' alpha-card' : ''}" style="${d.is_alpha ? 'border-left:3px solid #f59e0b;padding-left:8px' : ''}">
                 <span class="report-rank">${i + 1}</span>
+                ${d.is_alpha ? '<span class="alpha-badge">🚀 ALPHA</span>' : ''}
                 <span class="report-name">${esc(d.playlist_name || '—')}</span>
                 <span class="kw-mkt" style="font-size:11px">${esc(d.owner || '')} · ${esc(d.market)}</span>
                 ${posBadge(d.position)}
+                <span style="font-size:11px;color:var(--amber)">Opp: ${d.opp_score}</span>
                 ${email ? `<a class="action-btn email" href="mailto:${esc(email)}" style="font-size:11px">✉</a>` : ''}
                 ${ig    ? `<a class="action-btn ig" href="https://ig.me/m/${esc(ig.replace('@',''))}" target="_blank" style="font-size:11px">DM</a>` : ''}
               </div>`;
@@ -5740,7 +5915,8 @@ async function loadScout() {
   try {
     const market   = el('scout-market')?.value    || '';
     const minScore = el('scout-min-score')?.value || '0';
-    const params   = new URLSearchParams({ limit: 80 });
+    const sort     = el('scout-sort')?.value      || 'songscore';
+    const params   = new URLSearchParams({ limit: 80, sort });
     if (market)               params.set('market', market);
     if (Number(minScore) > 0) params.set('min_score', minScore);
     const tracks = await api('/api/scout?' + params);
@@ -5783,8 +5959,9 @@ function renderScoutTracks(tracks) {
   list.innerHTML = `<div class="scout-grid">${tracks.map(t => {
     const sc = Number(t.stickiness_score) || 0;
     const cls = stickClass(sc);
+    const isAlpha = sc >= 80;
     return `
-      <div class="scout-card">
+      <div class="scout-card${isAlpha ? ' alpha-card' : ''}">
         ${t.album_art
           ? `<img class="scout-card-art" src="${esc(t.album_art)}" alt="${esc(t.track_name)}" loading="lazy">`
           : `<div class="scout-card-art" style="display:flex;align-items:center;justify-content:center;font-size:36px">🎵</div>`
@@ -5794,8 +5971,8 @@ function renderScoutTracks(tracks) {
           <div class="scout-artist">${esc(t.artist_name || '—')}</div>
           <div style="margin:6px 0 2px">
             <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:11px;color:var(--ink3)">Stickiness</span>
-              <span class="stick-score ${cls}">${stickEmoji(sc)} ${sc}</span>
+              <span style="font-size:11px;color:var(--ink3)">SongScore</span>
+              <span class="stick-score ${cls}">${stickEmoji(sc)} ${sc}${isAlpha ? ' <span class="alpha-badge" style="font-size:9px">ALPHA</span>' : ''}</span>
             </div>
             <div class="stick-bar"><div class="stick-fill ${cls}" style="width:${sc}%"></div></div>
           </div>
@@ -5819,7 +5996,7 @@ function renderScoutTracks(tracks) {
         </div>
       </div>`;
   }).join('')}</div>
-  <div style="margin-top:12px;font-size:12px;color:var(--ink3);text-align:right">${tracks.length} tracks · sorted by Stickiness Score</div>`;
+  <div style="margin-top:12px;font-size:12px;color:var(--ink3);text-align:right">${tracks.length} tracks · sorted by SongScore (Pop 40% + Growth 30% + Genre Alignment 30%)</div>`;
 }
 
 // ── Crawl Expand buttons ──────────────────────────────────────────
@@ -5843,6 +6020,246 @@ async function doExpandKeywords() {
     refreshCrawlStatus();
   } catch(e) { showToast('Failed: ' + e.message, 'error'); }
   finally { if (btn) { btn.disabled = false; btn.textContent = '+10 Keywords'; } }
+}
+
+// ── Quick-Sync (per-view) ─────────────────────────────────────────
+async function doQuickSync() {
+  const btn = el('quick-sync-btn');
+  const view = S.view;
+  const viewSyncMap = {
+    dashboard:     () => loadAll(),
+    rankings:      () => loadRankings(),
+    scout:         () => loadScout(),
+    leads:         () => loadLeads(),
+    acquisition:   () => loadAcquisition(),
+    monitor:       () => loadMonitor(),
+    discovery:     () => loadDiscovery(),
+    'market-map':  () => loadMarketMap(),
+    trends:        () => loadTrends(),
+    opportunities: () => loadOpportunities(),
+    alerts:        () => loadAlerts(),
+    pivot:         () => loadPivot(),
+  };
+  if (btn) { btn.classList.add('spinning'); btn.querySelector('svg').style.animation = 'spin 1s linear infinite'; }
+  try {
+    const fn = viewSyncMap[view];
+    if (fn) await fn();
+    showToast('Synced ✓', 'success');
+  } catch(e) {
+    showToast('Sync failed: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.classList.remove('spinning'); btn.querySelector('svg').style.animation = ''; }
+  }
+}
+
+// ── Rankings Tier Filter ──────────────────────────────────────────
+const TIER1_MARKETS = ['US','GB','UK','DK','IS','NO','MC','FI','CH','IE','LI','SE','NZ','LU','AD','NL','AU','AT','DE','FR','BE'];
+const TIER2_MARKETS = ['CA','CY','IL','HK','EE','MT','SG','AE','ES','CZ','IT','LT','GR','HU','RO','SK','UY','PT','BR','MX'];
+const TIER3_MARKETS = ['ZA','PL','SA','TW','MY','TH','PE','CL','UA','PH','MA','PY','ID','TR','AR','VN'];
+
+S.rankingsTier = '';
+
+function setRankingsTier(tier) {
+  S.rankingsTier = tier;
+  ['all','t1','t2','t3'].forEach(t => {
+    const btn = el(`rank-tier-${t}`);
+    if (btn) btn.classList.toggle('active', (t === 'all' && !tier) || t === tier.toLowerCase());
+  });
+  renderRankings();
+}
+
+// ── Leads Tier Filter ─────────────────────────────────────────────
+S.leadsTier = '';
+
+function setLeadsTier(tier) {
+  S.leadsTier = tier;
+  ['all','t1','t2','t3'].forEach(t => {
+    const btn = el(`leads-tier-${t}`);
+    if (btn) btn.classList.toggle('active', (t === 'all' && !tier) || t === tier.toLowerCase());
+  });
+  renderLeads();
+}
+
+// ── Leads Expansion ───────────────────────────────────────────────
+async function expandLeads(count) {
+  const btn = event?.target;
+  if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+  try {
+    const minFoll = el('leads-min-followers')?.value || '1000';
+    const genre   = el('leads-genre-filter')?.value  || '';
+    const params  = new URLSearchParams({ min_followers: minFoll, limit: (S.leads?.length || 0) + count });
+    if (genre) params.set('genre', genre);
+    const newLeads = await api('/api/leads?' + params);
+    S.leads = newLeads;
+    renderLeads();
+    showToast(`+${count} leads loaded`, 'success');
+  } catch(e) {
+    showToast('Failed: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '+' + count; }
+  }
+}
+
+// ── Add Genre from Leads CRM ──────────────────────────────────────
+async function addGenreFromLeads() {
+  const input  = el('leads-genre-add-input');
+  const market = el('leads-genre-add-market')?.value || 'US';
+  const genre  = input?.value?.trim();
+  if (!genre) { showToast('Enter a genre name', 'error'); return; }
+  try {
+    // Add to target_genres first
+    await api('/api/genres', { method: 'POST', body: JSON.stringify({ name: genre }) });
+    // Then trigger a crawl for that genre in the selected market
+    await api('/api/crawl/genre', { method: 'POST', body: JSON.stringify({ genre, market, per_page: 20 }) });
+    showToast(`Genre "${genre}" added and crawl started for ${market}`, 'success');
+    if (input) input.value = '';
+    // Refresh genres list in state
+    S.genres = await api('/api/genres').catch(() => S.genres);
+    renderLeads();
+  } catch(e) {
+    showToast('Failed: ' + e.message, 'error');
+  }
+}
+
+// ── Scout 2.0 — Add Playlist & Add Genre ─────────────────────────
+async function doScoutAddPlaylist() {
+  const input  = el('scout-playlist-id');
+  const market = el('scout-playlist-market')?.value || 'US';
+  let rawId    = input?.value?.trim() || '';
+  // Extract ID from URL if needed
+  const m = rawId.match(/playlist\/([A-Za-z0-9]+)/);
+  if (m) rawId = m[1];
+  if (!rawId) { showToast('Enter a playlist ID or URL', 'error'); return; }
+  const btn = document.querySelector('[onclick="doScoutAddPlaylist()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Scouting…'; }
+  try {
+    await api('/api/scout/more', { method: 'POST', body: JSON.stringify({ playlist_id: rawId, market }) });
+    showToast('Playlist queued for scouting — check back in ~15s', 'success');
+    if (input) input.value = '';
+    setTimeout(() => loadScout(), 15000);
+  } catch(e) {
+    showToast('Failed: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Scout'; }
+  }
+}
+
+async function doScoutAddGenre() {
+  const input  = el('scout-genre-input');
+  const market = el('scout-genre-market')?.value || 'US';
+  const genre  = input?.value?.trim();
+  if (!genre) { showToast('Enter a genre name', 'error'); return; }
+  const btn = document.querySelector('[onclick="doScoutAddGenre()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
+  try {
+    // Add genre + crawl, then refresh scout
+    await api('/api/crawl/genre', { method: 'POST', body: JSON.stringify({ genre, market, per_page: 20 }) });
+    showToast(`Genre "${genre}" crawl started in ${market} — tracks will appear after sync`, 'success');
+    if (input) input.value = '';
+  } catch(e) {
+    showToast('Failed: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Scout'; }
+  }
+}
+
+async function doScoutMore() {
+  const btn = el('scout-more-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+  try {
+    await api('/api/scout/more', { method: 'POST', body: '{}' });
+    showToast('+10 tracks fetch started — check back in ~20s', 'success');
+    setTimeout(() => loadScout(), 20000);
+  } catch(e) {
+    showToast('Failed: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '+ 10 More Tracks'; }
+  }
+}
+
+// ── SEO Pivot Engine ──────────────────────────────────────────────
+let _pivotRaw = [];
+
+async function loadPivot() {
+  const listEl = el('pivot-list');
+  if (listEl) listEl.innerHTML = '<div class="panel-empty" style="padding:40px 0">Loading SEO pivot suggestions…</div>';
+  try {
+    _pivotRaw = await api('/api/seo-pivot');
+    // Populate market filter
+    const markets = [...new Set(_pivotRaw.map(p => p.from_market).filter(Boolean))].sort();
+    const mf = el('pivot-market-filter');
+    if (mf) mf.innerHTML = '<option value="">All Markets</option>' + markets.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('');
+    renderPivot();
+  } catch(e) {
+    if (listEl) listEl.innerHTML = `<div class="panel-empty" style="color:var(--red)">Failed to load: ${esc(e.message)}</div>`;
+  }
+}
+
+function renderPivot() {
+  const listEl = el('pivot-list');
+  if (!listEl) return;
+  const market = el('pivot-market-filter')?.value || '';
+  let pivots = [..._pivotRaw];
+  if (market) pivots = pivots.filter(p => p.from_market === market || p.to_market === market);
+
+  if (!pivots.length) {
+    listEl.innerHTML = `<div class="panel-empty" style="padding:60px 0;text-align:center">
+      <div style="font-size:32px;margin-bottom:12px">🔄</div>
+      <div style="font-weight:600;margin-bottom:6px">No pivot opportunities found</div>
+      <div style="font-size:13px;color:var(--ink3)">Pivot suggestions appear when tracked keywords are stagnant (pos > 5) and better alternatives exist in keyword_intel</div>
+    </div>`;
+    return;
+  }
+
+  listEl.innerHTML = `<div class="pivot-grid">${pivots.map(p => {
+    const gainColor = p.traffic_gain_pct >= 50 ? 'var(--green)' : p.traffic_gain_pct >= 20 ? 'var(--amber)' : 'var(--ink2)';
+    const easeColor = p.ease_score >= 60 ? 'var(--green)' : p.ease_score >= 30 ? 'var(--amber)' : 'var(--red)';
+    return `
+    <div class="pivot-card">
+      <div class="pivot-arrow">
+        <div class="pivot-kw">
+          <div style="font-size:10px;color:var(--ink3);font-weight:400;margin-bottom:2px">CURRENT · pos #${p.from_position}</div>
+          ${esc(p.from_term)} <span class="badge-mkt" style="font-size:10px">${esc(p.from_market)}</span>
+        </div>
+        <div class="pivot-arrow-icon">→</div>
+        <div class="pivot-kw to">
+          <div style="font-size:10px;color:var(--green);font-weight:400;margin-bottom:2px">PIVOT TARGET</div>
+          ${esc(p.to_term)} <span class="badge-mkt" style="font-size:10px">${esc(p.to_market)}</span>
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--ink2);font-style:italic">
+        Your rank for <strong style="color:var(--ink)">${esc(p.from_term)}</strong> is stagnant — pivot to
+        <strong style="color:var(--green)">${esc(p.to_term)}</strong> for ~${p.traffic_gain_pct}% more T1 traffic
+      </div>
+      <div class="pivot-stats">
+        <div class="pivot-stat">Traffic: <strong>${p.from_traffic}</strong> → <strong style="color:${gainColor}">${p.to_traffic}</strong></div>
+        <div class="pivot-stat">Growth: <strong style="color:var(--green)">+${Math.round(p.to_growth)}%</strong></div>
+        <div class="pivot-stat">Ease: <strong style="color:${easeColor}">${p.ease_score}/100</strong></div>
+        <div class="pivot-gain">+${p.traffic_gain_pct}% traffic</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn primary" style="font-size:12px;padding:5px 12px"
+          onclick="addPivotKeyword('${esc(p.to_term)}','${esc(p.to_market)}')">
+          + Add Keyword
+        </button>
+        <button class="btn sm" style="font-size:12px"
+          onclick="crawlMoreForItem('${esc(p.to_term)}','${esc(p.to_market)}',this)">
+          ↻ Research
+        </button>
+      </div>
+    </div>`;
+  }).join('')}</div>
+  <div style="margin-top:12px;font-size:12px;color:var(--ink3);text-align:right">${pivots.length} SEO Flip suggestions</div>`;
+}
+
+async function addPivotKeyword(term, market) {
+  try {
+    await api('/api/keywords', { method: 'POST', body: JSON.stringify({ term, market }) });
+    showToast(`"${term}" added to tracked keywords`, 'success');
+    S.keywords = await api('/api/keywords').catch(() => S.keywords);
+  } catch(e) {
+    showToast('Failed: ' + e.message, 'error');
+  }
 }
 
 // ── Crawl / Research Engine ───────────────────────────────────────
