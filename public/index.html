@@ -90,7 +90,7 @@
 
     body {
       font-family: var(--ff-ui);
-      font-size: 14px;
+      font-size: 16px; /* 1.2× from 14px */
       color: var(--ink);
       background: var(--surface2);
       display: flex;
@@ -130,7 +130,7 @@
     .content {
       flex: 1;
       overflow-y: auto;
-      padding: 20px;
+      padding: 16px 2.5vw; /* 95% effective width */
     }
 
     /* ── Sidebar ──────────────────────────────────────────────── */
@@ -1421,6 +1421,72 @@
     .change-badge.new  { background: var(--blue-bg);  color: var(--blue); }
     .change-badge.flat { background: var(--surface3); color: var(--ink3); }
 
+    /* ── Foldable Rankings ─────────────────────────────────────── */
+    .fold-group { margin-bottom: 4px; border-radius: var(--r); overflow: hidden; }
+    .fold-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 14px; background: var(--surface2);
+      border-bottom: 0.5px solid var(--border); cursor: pointer;
+      user-select: none; transition: background 0.1s;
+    }
+    .fold-header:hover { background: var(--surface3); }
+    .fold-chevron {
+      font-size: 11px; color: var(--ink3); transition: transform 0.18s;
+      margin-left: auto; flex-shrink: 0;
+    }
+    .fold-header.open .fold-chevron { transform: rotate(90deg); }
+    .fold-body { display: none; }
+    .fold-body.open { display: block; }
+    .fold-count {
+      background: var(--surface3); color: var(--ink3);
+      font-size: 11px; font-weight: 600; padding: 1px 7px;
+      border-radius: var(--rpill);
+    }
+
+    /* ── Crawl Tab ─────────────────────────────────────────────── */
+    .crawl-section { margin-bottom: 20px; }
+    .crawl-card {
+      background: var(--surface); border: 0.5px solid var(--border2);
+      border-radius: var(--r); padding: 18px 20px; margin-bottom: 12px;
+    }
+    .crawl-card-title {
+      font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 4px;
+    }
+    .crawl-card-sub {
+      font-size: 13px; color: var(--ink3); margin-bottom: 14px;
+    }
+    .crawl-result {
+      margin-top: 10px; padding: 10px 14px;
+      background: var(--surface2); border-radius: var(--r);
+      font-size: 13px; color: var(--ink2); line-height: 1.5;
+    }
+    .crawl-result.ok    { border-left: 3px solid var(--green); }
+    .crawl-result.error { border-left: 3px solid var(--red); color: var(--red); }
+
+    @keyframes highlight-flash {
+      0%   { background: var(--blue-bg); }
+      100% { background: transparent; }
+    }
+    .highlight-flash { animation: highlight-flash 1.8s ease-out forwards; }
+
+    .fold-header-row:hover td { background: var(--surface3); }
+
+    .market-grid {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;
+    }
+    .market-chip {
+      padding: 3px 10px; border-radius: var(--rpill); font-size: 12px;
+      border: 0.5px solid var(--border2); cursor: pointer; transition: all 0.1s;
+      color: var(--ink2);
+    }
+    .market-chip.selected { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+
+    /* ── Discovery & Monitor reduced padding ───────────────────── */
+    #view-discovery .panel-body,
+    #view-monitor   .panel-body { padding: 0; }
+    #view-discovery .discovery-table td,
+    #view-discovery .discovery-table th { padding: 7px 12px; }
+
     /* ── Monitor / Watchlist ───────────────────────────────────── */
     .monitor-card {
       display: flex; align-items: flex-start; gap: 12px;
@@ -1940,6 +2006,10 @@
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1.5 3.5h12v7a1 1 0 01-1 1h-10a1 1 0 01-1-1v-7z" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 11.5v2M9.5 11.5v2M3.5 13.5h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="7.5" cy="7" r="1.5" stroke="currentColor" stroke-width="1.3"/></svg>
       Monitor
     </div>
+    <div class="nav-item" data-view="crawl" onclick="navigate('crawl')">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1A6.5 6.5 0 111 7.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M1 3V1h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.5 4.5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Crawl
+    </div>
     <div class="nav-item" data-view="leads" onclick="navigate('leads')">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 13c0-3 2.5-4.5 5.5-4.5S13 10 13 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M10.5 7l1 1 2-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Leads
@@ -2185,6 +2255,80 @@
         <button class="btn sm" onclick="loadSeasonal()">↻ Refresh</button>
       </div>
       <div id="seasonal-themes"></div>
+    </div>
+
+    <!-- ── CRAWL ──────────────────────────────────────────────── -->
+    <div class="view" data-view="crawl" id="view-crawl">
+      <div class="flex-between section-gap" style="flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-family:var(--ff-serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px">Research Engine</div>
+          <div class="text-muted" style="margin-top:3px">Targeted crawls — saves API credits vs a full Master Sync</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div id="crawl-status-pill" style="font-size:12px;color:var(--ink3)"></div>
+          <button class="btn primary" onclick="triggerCrawl()" id="crawl-full-btn">
+            ↻ Full Sync
+          </button>
+        </div>
+      </div>
+
+      <!-- Crawl Keyword -->
+      <div class="crawl-card">
+        <div class="crawl-card-title">🔍 Crawl Keyword</div>
+        <div class="crawl-card-sub">Fetch top playlists for a specific search term in a market (20 results, ~30 API calls)</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input class="input" id="crawl-kw-term" placeholder="e.g. chill lo-fi" style="flex:1;min-width:160px" />
+          <select class="select" id="crawl-kw-market" style="width:90px">
+            <option value="US">US</option><option value="GB">GB</option><option value="DE">DE</option>
+            <option value="FR">FR</option><option value="NL">NL</option><option value="BR">BR</option>
+            <option value="AU">AU</option><option value="CA">CA</option><option value="SE">SE</option>
+            <option value="NO">NO</option><option value="TR">TR</option><option value="ID">ID</option>
+          </select>
+          <input class="input" id="crawl-kw-limit" type="number" value="20" min="5" max="50" style="width:70px" placeholder="Limit" />
+          <button class="btn primary" id="crawl-kw-btn" onclick="doCrawlKeyword()">Crawl</button>
+        </div>
+        <div id="crawl-kw-result" class="crawl-result" style="display:none"></div>
+      </div>
+
+      <!-- Crawl Playlist -->
+      <div class="crawl-card">
+        <div class="crawl-card-title">🎵 Refresh Playlist</div>
+        <div class="crawl-card-sub">Update followers, genre, and SEO snapshot for a specific playlist (~5 API calls)</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input class="input" id="crawl-pl-id" placeholder="Spotify playlist URL or ID" style="flex:1" />
+          <button class="btn primary" id="crawl-pl-btn" onclick="doCrawlPlaylist()">Refresh</button>
+        </div>
+        <div id="crawl-pl-result" class="crawl-result" style="display:none"></div>
+      </div>
+
+      <!-- Crawl Genre -->
+      <div class="crawl-card">
+        <div class="crawl-card-title">🎸 Crawl Genre</div>
+        <div class="crawl-card-sub">Auto-generate top 5 localized terms for a genre and crawl them in the selected market (~100 API calls)</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input class="input" id="crawl-genre-term" placeholder="e.g. afro house" style="flex:1;min-width:140px" />
+          <select class="select" id="crawl-genre-market" style="width:90px">
+            <option value="US">US</option><option value="GB">GB</option><option value="DE">DE</option>
+            <option value="FR">FR</option><option value="NL">NL</option><option value="BR">BR</option>
+            <option value="AU">AU</option><option value="CA">CA</option><option value="SE">SE</option>
+            <option value="TR">TR</option><option value="ID">ID</option>
+          </select>
+          <input class="input" id="crawl-genre-limit" type="number" value="20" min="5" max="50" style="width:70px" />
+          <button class="btn primary" id="crawl-genre-btn" onclick="doCrawlGenre()">Crawl</button>
+        </div>
+        <div id="crawl-genre-result" class="crawl-result" style="display:none"></div>
+      </div>
+
+      <!-- Recent crawl log -->
+      <div class="panel section-gap">
+        <div class="panel-header">
+          <span class="panel-title">⚡ Sync Status</span>
+          <button class="btn sm" onclick="refreshCrawlStatus()">↻ Refresh</button>
+        </div>
+        <div class="panel-body" id="crawl-log" style="padding:14px 16px;font-size:13px;color:var(--ink2)">
+          Loading status…
+        </div>
+      </div>
     </div>
 
     <!-- ── OPPORTUNITIES ─────────────────────────────────────── -->
@@ -2964,7 +3108,7 @@ function navigate(view) {
     alerts:'Alerts', playlists:'Playlists', keywords:'Keywords', settings:'Settings',
     trends:'Trends', 'market-map':'Market Map', leads:'Lead CRM',
     acquisition:'Acquisition Scout', genres:'Target Genres', discovery:'Keyword Discovery',
-    monitor:'Monitor', seasonal:'Seasonal Opportunities',
+    monitor:'Monitor', seasonal:'Seasonal Opportunities', crawl:'Research Engine',
   };
   el('page-title').textContent = titles[view] || view;
   const contentEl = document.querySelector('.content');
@@ -2984,6 +3128,7 @@ function navigate(view) {
   if (view === 'discovery')     loadDiscovery();
   if (view === 'monitor')       loadMonitor();
   if (view === 'seasonal')      loadSeasonal();
+  if (view === 'crawl')         loadCrawl();
 }
 
 // ── Init ─────────────────────────────────────────────────────────
@@ -3323,30 +3468,80 @@ function renderRankings() {
     return;
   }
 
-  tbody.innerHTML = rows.map(r => {
-    const prev30 = null; // 30d delta from /api/rankings endpoint (future: add to server)
-    return `
-    <tr class="${r.is_competitor ? 'competitor' : ''}">
-      <td><strong style="font-weight:500">${esc(r.term)}</strong></td>
-      <td>
-        <div class="td-playlist">
-          ${artOrFallback(r.image_url, r.playlist_name, 28)}
-          <div>
-            <div class="td-name">
-              ${esc(r.playlist_name)}
-              ${r.is_competitor ? '<span class="competitor-badge">Competitor</span>' : ''}
+  // Group by keyword term
+  const groups = {};
+  rows.forEach(r => {
+    const key = `${r.term}||${r.market}`;
+    if (!groups[key]) groups[key] = { term: r.term, market: r.market, rows: [] };
+    groups[key].rows.push(r);
+  });
+
+  tbody.innerHTML = Object.values(groups).map((g, gi) => {
+    const groupId = `fold-rk-${gi}`;
+    const topPos  = Math.min(...g.rows.map(r => r.position || 999));
+    const rowsHtml = g.rows.map(r => `
+      <tr class="${r.is_competitor ? 'competitor' : ''}">
+        <td></td>
+        <td>
+          <div class="td-playlist">
+            ${artOrFallback(r.image_url, r.playlist_name, 28)}
+            <div>
+              <div class="td-name">
+                <span class="rankings-pl-link" onclick="navigateToPlaylist('${esc(r.spotify_id)}')" style="cursor:pointer;text-decoration:underline;text-decoration-color:var(--border2)">${esc(r.playlist_name)}</span>
+                ${r.is_competitor ? '<span class="competitor-badge">Competitor</span>' : ''}
+              </div>
+              ${r.label ? `<div class="td-label">${esc(r.label)}</div>` : ''}
+              ${r.genre ? `<div class="td-label" style="font-style:italic">${esc(r.genre)}</div>` : ''}
             </div>
-            ${r.label ? `<div class="td-label">${esc(r.label)}</div>` : ''}
-            ${r.genre ? `<div class="td-label" style="font-style:italic">${esc(r.genre)}</div>` : ''}
           </div>
-        </div>
-      </td>
-      <td><span class="badge-mkt">${esc(r.market)}</span></td>
-      <td>${posBadge(r.position)}</td>
-      <td>${deltaBadge(r.position, r.prev_position)}</td>
-      <td>—</td>
-    </tr>`;
+        </td>
+        <td><span class="badge-mkt">${esc(r.market)}</span></td>
+        <td>${posBadge(r.position)}</td>
+        <td>${deltaBadge(r.position, r.prev_position)}</td>
+        <td>${r.followers ? fmtNum(r.followers) : '—'}</td>
+      </tr>`).join('');
+
+    return `
+      <tr class="fold-header-row" onclick="toggleFoldRow('${groupId}')" style="cursor:pointer;background:var(--surface2)">
+        <td colspan="6" style="padding:8px 14px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="fold-chevron" id="chevron-${groupId}" style="font-size:11px;color:var(--ink3);transition:transform 0.18s">▶</span>
+            <strong style="font-weight:600;font-size:13px">${esc(g.term)}</strong>
+            <span class="badge-mkt" style="font-size:11px">${esc(g.market)}</span>
+            <span style="font-size:12px;color:var(--ink3)">${g.rows.length} playlist${g.rows.length !== 1 ? 's' : ''}</span>
+            ${topPos <= 10 ? posBadge(topPos) : ''}
+          </div>
+        </td>
+      </tr>
+      <tr class="fold-body-row" id="${groupId}" style="display:none">
+        <td colspan="6" style="padding:0">
+          <table style="width:100%;border-collapse:collapse">${rowsHtml}</table>
+        </td>
+      </tr>`;
   }).join('');
+}
+
+function toggleFoldRow(groupId) {
+  const body    = el(groupId);
+  const chevron = el(`chevron-${groupId}`);
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : '';
+  if (chevron) chevron.style.transform = open ? '' : 'rotate(90deg)';
+}
+
+function navigateToPlaylist(spotifyId) {
+  navigate('playlists');
+  // Highlight the playlist once the view renders
+  setTimeout(() => {
+    const p = S.playlists.find(pl => pl.spotify_id === spotifyId);
+    if (p) {
+      S.selectedPlaylist = p.id;
+      renderPlaylists();
+      const row = document.querySelector(`[data-pl-id="${p.id}"]`);
+      if (row) { row.scrollIntoView({ behavior: 'smooth', block: 'center' }); row.classList.add('highlight-flash'); }
+    }
+  }, 120);
 }
 
 async function loadGroupedRankings() {
@@ -3367,7 +3562,7 @@ async function loadGroupedRankings() {
 
 function renderGroupedRankings() {
   const q = (el('rankings-search')?.value || '').toLowerCase();
-  let groups = S.rankingsGrouped;
+  let groups = S.rankingsGrouped || [];
   if (q) groups = groups.filter(g =>
     g.playlist_name.toLowerCase().includes(q) ||
     g.keywords.some(k => k.term.toLowerCase().includes(q))
@@ -3376,27 +3571,48 @@ function renderGroupedRankings() {
     el('rankings-grouped-body').innerHTML = '<div class="panel-empty" style="padding:32px">No grouped data yet.</div>';
     return;
   }
-  el('rankings-grouped-body').innerHTML = groups.map(g => `
-    <div class="grouped-playlist-card">
-      <div class="grouped-playlist-header">
+  el('rankings-grouped-body').innerHTML = groups.map((g, gi) => {
+    const gid = `fold-gp-${gi}`;
+    const bestPos = Math.min(...g.keywords.map(k => k.position || 999));
+    return `
+    <div class="grouped-playlist-card" style="margin-bottom:4px;border-radius:var(--r);overflow:hidden">
+      <div class="grouped-playlist-header" onclick="toggleFoldGroup('${gid}')" style="cursor:pointer;user-select:none">
+        <span id="chevron-${gid}" style="font-size:11px;color:var(--ink3);transition:transform 0.18s;margin-right:4px">▶</span>
         ${artOrFallback(g.image_url, g.playlist_name, 32)}
         <div style="flex:1;min-width:0">
-          <div style="font-weight:600;font-size:14px">${esc(g.playlist_name)}</div>
+          <div style="font-weight:600;font-size:14px;cursor:pointer" onclick="event.stopPropagation();navigateToPlaylist('${esc(g.spotify_id)}')">${esc(g.playlist_name)}</div>
           ${g.genre ? `<div style="font-size:11px;color:var(--ink3);font-style:italic">${esc(g.genre)}</div>` : ''}
         </div>
-        <span class="panel-meta">${g.keywords.length} keyword${g.keywords.length !== 1 ? 's' : ''}</span>
-      </div>
-      ${g.keywords.map(k => `
-        <div class="grouped-kw-row">
-          <span style="flex:1;font-weight:500">${esc(k.term)}</span>
-          <span class="badge-mkt" style="font-size:11px">${esc(k.market)}</span>
-          ${posBadge(k.position)}
-          ${k.pos_7d  != null ? `<span class="change-badge ${k.pos_7d  - k.position > 0 ? 'up' : k.pos_7d  - k.position < 0 ? 'down' : 'flat'}">7d ${k.pos_7d  - k.position > 0 ? '↑' : '↓'}${Math.abs(k.pos_7d  - k.position)}</span>` : `<span class="change-badge new">7d New</span>`}
-          ${k.pos_30d != null ? `<span class="change-badge ${k.pos_30d - k.position > 0 ? 'up' : k.pos_30d - k.position < 0 ? 'down' : 'flat'}">30d ${k.pos_30d - k.position > 0 ? '↑' : '↓'}${Math.abs(k.pos_30d - k.position)}</span>` : `<span class="change-badge new">30d New</span>`}
+        <div style="display:flex;align-items:center;gap:8px">
+          ${bestPos <= 10 ? posBadge(bestPos) : ''}
+          <span class="panel-meta">${g.keywords.length} kw</span>
         </div>
-      `).join('')}
-    </div>
-  `).join('');
+      </div>
+      <div id="${gid}" style="display:none">
+        ${g.keywords.map(k => {
+          const d7  = k.pos_7d  != null ? k.pos_7d  - k.position : null;
+          const d30 = k.pos_30d != null ? k.pos_30d - k.position : null;
+          return `
+          <div class="grouped-kw-row">
+            <span style="flex:1;font-weight:500">${esc(k.term)}</span>
+            <span class="badge-mkt" style="font-size:11px">${esc(k.market)}</span>
+            ${posBadge(k.position)}
+            ${d7  !== null ? `<span class="change-badge ${d7 > 0 ? 'up' : d7 < 0 ? 'down' : 'flat'}">7d ${d7 > 0 ? '↑' : '↓'}${Math.abs(d7)}</span>`  : `<span class="change-badge new">7d New</span>`}
+            ${d30 !== null ? `<span class="change-badge ${d30 > 0 ? 'up' : d30 < 0 ? 'down' : 'flat'}">30d ${d30 > 0 ? '↑' : '↓'}${Math.abs(d30)}</span>` : `<span class="change-badge new">30d New</span>`}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleFoldGroup(gid) {
+  const body    = el(gid);
+  const chevron = el(`chevron-${gid}`);
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : '';
+  if (chevron) chevron.style.transform = open ? '' : 'rotate(90deg)';
 }
 
 // ── Export CSV ────────────────────────────────────────────────────
@@ -3600,7 +3816,11 @@ async function addKeyword() {
     populateMarketFilter();
     renderKeywords();
     el('kw-input').value = '';
-    showToast(`"${term}" added to ${market}`);
+    showToast(`"${term}" added to ${market} — running deep research…`);
+    // Auto deep-research: fire-and-forget crawl for the new keyword
+    api('/api/crawl/keyword', { method: 'POST', body: JSON.stringify({ term, market, per_page: 20 }) })
+      .then(() => showToast(`Research complete for "${term}"`, 'success'))
+      .catch(() => {});
   } catch(e) {
     showToast(e.message || 'Failed to add keyword', 'error');
   }
@@ -4273,8 +4493,9 @@ function renderGenres() {
 }
 
 async function addGenre() {
-  const input = el('genre-input');
-  const name  = input.value.trim().toLowerCase();
+  const input  = el('genre-input');
+  const name   = input.value.trim().toLowerCase();
+  const market = el('genre-market')?.value || 'US';
   if (!name) { showToast('Enter a genre name', 'error'); return; }
   try {
     const g = await api('/api/genres', { method: 'POST', body: JSON.stringify({ name }) });
@@ -4284,7 +4505,15 @@ async function addGenre() {
     }
     input.value = '';
     renderGenres();
-    showToast(`"${name}" ${g.duplicate ? 'already tracked' : 'added — will be crawled on next sync'}`);
+    if (!g.duplicate) {
+      showToast(`"${name}" added — running genre deep research…`);
+      // Auto deep-research: fire-and-forget genre crawl
+      api('/api/crawl/genre', { method: 'POST', body: JSON.stringify({ genre: name, market, per_page: 20 }) })
+        .then(() => showToast(`Genre research complete for "${name}"`, 'success'))
+        .catch(() => {});
+    } else {
+      showToast(`"${name}" already tracked`);
+    }
   } catch(e) {
     showToast('Failed to add genre', 'error');
   }
@@ -5182,6 +5411,139 @@ function estMonthlyRevenue(followers, market) {
   const rate = royaltyRate(market);
   const streams = (Number(followers) || 0) * 0.15;
   return Math.round(streams * rate * 100) / 100;
+}
+
+// ── Crawl / Research Engine ───────────────────────────────────────
+let _crawlStatusTimer = null;
+
+async function loadCrawl() {
+  refreshCrawlStatus();
+}
+
+async function refreshCrawlStatus() {
+  const log  = el('crawl-log');
+  const pill = el('crawl-status-pill');
+  try {
+    const [s, stats] = await Promise.all([
+      api('/api/crawl/status').catch(() => ({})),
+      api('/api/stats').catch(() => ({})),
+    ]);
+    if (s.running) {
+      const pct = s.pct || (s.total > 0 ? Math.round((s.progress / s.total) * 100) : 0);
+      if (pill) pill.innerHTML = `<span style="color:var(--amber)">⚡ Running ${pct}%</span>`;
+      if (log) log.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <span style="color:var(--amber);font-weight:600">⚡ Sync in progress</span>
+          <span style="font-size:12px;color:var(--ink2)">${esc(s.current || '')}</span>
+        </div>
+        <div style="background:var(--surface3);border-radius:4px;height:6px;width:100%;margin-bottom:8px">
+          <div style="background:var(--amber);height:6px;border-radius:4px;width:${pct}%;transition:width 0.4s"></div>
+        </div>
+        <div style="font-size:12px;color:var(--ink3)">${s.progress || 0} / ${s.total || '?'} keywords · started ${s.startedAt ? _relTime(s.startedAt) : 'just now'}</div>`;
+    } else {
+      const startedAt = s.startedAt ? new Date(s.startedAt).toLocaleString() : null;
+      if (pill) pill.textContent = startedAt ? `Last run ${_relTime(s.startedAt)}` : 'Never synced';
+      const rows = [];
+      if (startedAt) rows.push({ label: 'Last sync run',      value: startedAt });
+      if (stats.playlists != null) rows.push({ label: 'Playlists indexed', value: fmtNum(stats.playlists) });
+      if (stats.keywords  != null) rows.push({ label: 'Keywords tracked',  value: fmtNum(stats.keywords)  });
+      if (stats.data_points != null) rows.push({ label: 'Data points',     value: fmtNum(stats.data_points) });
+      if (log) log.innerHTML = rows.length
+        ? `<div style="display:grid;grid-template-columns:auto 1fr;gap:4px 24px;align-items:baseline">
+            ${rows.map(r => `<span style="font-size:12px;color:var(--ink3);white-space:nowrap">${esc(r.label)}</span>
+              <span style="font-size:13px">${esc(String(r.value))}</span>`).join('')}
+          </div>`
+        : '<span style="color:var(--ink3)">No sync data yet. Run a crawl to get started.</span>';
+    }
+  } catch(e) {
+    if (log) log.innerHTML = `<span style="color:var(--red)">Failed to fetch status: ${esc(e.message)}</span>`;
+  }
+}
+
+function _relTime(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1)   return 'just now';
+  if (m < 60)  return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24)  return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+async function doCrawlKeyword() {
+  const term   = el('crawl-kw-term').value.trim();
+  const market = el('crawl-kw-market').value;
+  const perPage = Number(el('crawl-kw-limit').value) || 20;
+  if (!term) { showToast('Enter a keyword term', 'error'); return; }
+  const btn = el('crawl-kw-btn');
+  const res = el('crawl-kw-result');
+  btn.disabled = true; btn.textContent = 'Crawling…';
+  res.style.display = 'none';
+  try {
+    await api('/api/crawl/keyword', { method: 'POST', body: JSON.stringify({ term, market, per_page: perPage }) });
+    res.className = 'crawl-result ok';
+    res.style.display = '';
+    res.innerHTML = `<strong>✓ Crawl started</strong> — "${esc(term)}" in ${market} (${perPage} results). Results will appear in Rankings once complete.`;
+    refreshCrawlStatus();
+  } catch(e) {
+    res.className = 'crawl-result error';
+    res.style.display = '';
+    res.innerHTML = `<strong>Error:</strong> ${esc(e.message)}`;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Crawl';
+  }
+}
+
+async function doCrawlPlaylist() {
+  const raw = el('crawl-pl-id').value.trim();
+  // Accept full URL or bare ID
+  const spotifyId = raw.replace(/.*playlist\/([A-Za-z0-9]+).*/,'$1').replace(/\?.*/,'');
+  if (!spotifyId) { showToast('Enter a Spotify playlist URL or ID', 'error'); return; }
+  const btn = el('crawl-pl-btn');
+  const res = el('crawl-pl-result');
+  btn.disabled = true; btn.textContent = 'Refreshing…';
+  res.style.display = 'none';
+  try {
+    const data = await api('/api/crawl/playlist', { method: 'POST', body: JSON.stringify({ spotify_id: spotifyId }) });
+    res.className = 'crawl-result ok';
+    res.style.display = '';
+    const name = data.name || spotifyId;
+    const followers = data.followers != null ? `${fmtNum(data.followers)} followers` : '';
+    res.innerHTML = `<strong>✓ Refreshed:</strong> ${esc(name)}${followers ? ` · <span style="color:var(--ink2)">${followers}</span>` : ''}`;
+    // Refresh playlists state
+    api('/api/playlists').then(pls => { S.playlists = pls; }).catch(() => {});
+    refreshCrawlStatus();
+  } catch(e) {
+    res.className = 'crawl-result error';
+    res.style.display = '';
+    res.innerHTML = `<strong>Error:</strong> ${esc(e.message)}`;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Refresh';
+  }
+}
+
+async function doCrawlGenre() {
+  const genre  = el('crawl-genre-term').value.trim();
+  const market = el('crawl-genre-market').value;
+  const perPage = Number(el('crawl-genre-limit').value) || 20;
+  if (!genre) { showToast('Enter a genre name', 'error'); return; }
+  const btn = el('crawl-genre-btn');
+  const res = el('crawl-genre-result');
+  btn.disabled = true; btn.textContent = 'Crawling…';
+  res.style.display = 'none';
+  try {
+    await api('/api/crawl/genre', { method: 'POST', body: JSON.stringify({ genre, market, per_page: perPage }) });
+    res.className = 'crawl-result ok';
+    res.style.display = '';
+    res.innerHTML = `<strong>✓ Genre crawl started</strong> — "${esc(genre)}" in ${market}. Top 5 localized terms will be crawled in the background.`;
+    refreshCrawlStatus();
+  } catch(e) {
+    res.className = 'crawl-result error';
+    res.style.display = '';
+    res.innerHTML = `<strong>Error:</strong> ${esc(e.message)}`;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Crawl';
+  }
 }
 
 // ── Boot ──────────────────────────────────────────────────────────

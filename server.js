@@ -1052,8 +1052,21 @@ function calcValuation3(followers, position, market) {
 }
 const calcValuation2 = calcValuation3; // backwards-compat alias
 
-// daily 06:00 UTC
-cron.schedule('0 6 * * *', runCrawl, { timezone: 'UTC' });
+/// daily 17:00 UTC = 18:00 GMT+1 — skip if already ran in last 24h
+cron.schedule('0 17 * * *', async () => {
+  try {
+    const { rows } = await pool.query(`SELECT value FROM settings WHERE key='last_crawl'`);
+    const lastCrawl = rows[0]?.value ? new Date(rows[0].value) : null;
+    if (lastCrawl && (Date.now() - lastCrawl.getTime()) < 24 * 60 * 60 * 1000) {
+      console.log('[cron] last sync was <24h ago — skipping auto crawl');
+      return;
+    }
+    runCrawl().catch(console.error);
+  } catch(e) {
+    console.error('[cron] schedule check failed:', e.message);
+    runCrawl().catch(console.error);
+  }
+}, { timezone: 'UTC' });
 
 // ─── API routes ──────────────────────────────────────────────────────────────
 
@@ -2360,7 +2373,153 @@ app.get('/api/seasonal', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Trigger crawl
+// ── Selective / Deep Research crawl helpers ───────────────────────────────────
+
+async function deepResearchKeyword(term, market, perPage = 20) {
+  console.log(`[research] keyword "${term}" in ${market}, limit ${perPage}`);
+  const token = await getToken();
+  const encoded = encodeURIComponent(term);
+  const res = await fetch(
+    `https://api.spotify.com/v1/search?q=${encoded}&type=playlist&market=${market}&limit=${perPage}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) throw new Error(`Spotify search error: ${res.status}`);
+  const data = await res.json();
+  const playlists = data?.playlists?.items || [];
+
+  // Upsert keyword
+  const { rows: kwRows } = await pool.query(
+    `INSERT INTO keywords (term, market, source) VALUES ($1,$2,'manual')
+     ON CONFLICT (term, market) DO UPDATE SET source='manual' RETURNING id`,
+    [term.toLowerCase(), market]
+  );
+  const kwId = kwRows[0].id;
+
+  const results = [];
+  for (let i = 0; i < playlists.length; i++) {
+    const pl = playlists[i];
+    if (!pl) continue;
+    await sleep(200);
+    try {
+      const detail = await spotifyGet(
+        `/playlists/${pl.id}?fields=id,name,owner.display_name,followers.total,images,description`
+      );
+      const followers = detail?.followers?.total || 0;
+      const owner     = detail?.owner?.display_name || pl.owner?.display_name || '';
+      const imgUrl    = detail?.images?.[0]?.url || pl.images?.[0]?.url || null;
+      const name      = detail?.name || pl.name || '';
+      const desc      = detail?.description || '';
+
+      // Extract contact info from description
+      const emails     = [...new Set(desc.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g) || [])];
+      const instagrams = [...new Set((desc.match(/@([A-Za-z0-9_.]{1,30})/g) || []).map(m => m))];
+      const linktrees  = [...new Set((desc.match(/linktr\.ee\/\S+/g) || []))];
+      const contactInfo = { emails, instagrams, linktrees };
+
+      await pool.query(`
+        INSERT INTO curator_snapshots
+          (keyword_id, position, spotify_id, playlist_name, owner, followers, description, contact_info, checked_at)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
+        ON CONFLICT DO NOTHING
+      `, [kwId, i + 1, pl.id, name, owner, followers, desc.slice(0, 500), JSON.stringify(contactInfo)]);
+
+      results.push({ position: i + 1, name, followers, spotify_id: pl.id });
+    } catch(e) {
+      console.error(`[research] playlist ${pl.id}:`, e.message);
+    }
+  }
+
+  console.log(`[research] "${term}" in ${market}: ${results.length} results saved`);
+  return results;
+}
+
+async function deepResearchPlaylist(spotifyId) {
+  console.log(`[research] playlist ${spotifyId}`);
+  const detail = await spotifyGet(
+    `/playlists/${spotifyId}?fields=id,name,owner.display_name,followers.total,images,description`
+  );
+  const followers = detail?.followers?.total || 0;
+  const owner     = detail?.owner?.display_name || '';
+  const name      = detail?.name || '';
+  const imgUrl    = detail?.images?.[0]?.url || null;
+
+  // Update existing playlist record if we own it
+  await pool.query(
+    `UPDATE playlists SET followers=$1, image_url=COALESCE($2,image_url), name=$3 WHERE spotify_id=$4`,
+    [followers, imgUrl, name, spotifyId]
+  );
+
+  // Detect genre if not set
+  const genre = await detectGenre(spotifyId).catch(() => null);
+  if (genre) {
+    await pool.query('UPDATE playlists SET genre=$1 WHERE spotify_id=$2 AND genre IS NULL', [genre, spotifyId]);
+  }
+
+  // Generate SEO keywords from playlist and record ranking snapshot for each tracked keyword
+  const { rows: trackedKws } = await pool.query(`
+    SELECT DISTINCT k.id, k.term, k.market FROM keywords k
+    JOIN rank_history rh ON rh.keyword_id = k.id
+    JOIN playlists p ON p.id = rh.playlist_id WHERE p.spotify_id = $1
+    LIMIT 20
+  `, [spotifyId]);
+
+  return { name, followers, genre, trackedKeywords: trackedKws.length };
+}
+
+async function deepResearchGenre(genre, market, perPage = 20) {
+  console.log(`[research] genre "${genre}" in ${market}`);
+  const terms = getLocalizedTerms(genre, market).slice(0, 5); // top 5 terms only
+  const results = [];
+  for (const term of terms) {
+    try {
+      const res = await deepResearchKeyword(term, market, perPage);
+      results.push({ term, count: res.length });
+      await sleep(400);
+    } catch(e) {
+      console.error(`[research] genre term "${term}":`, e.message);
+    }
+  }
+  // Also add genre to target_genres
+  await pool.query(
+    `INSERT INTO target_genres (name) VALUES ($1) ON CONFLICT (name) DO NOTHING`,
+    [genre.toLowerCase().trim()]
+  );
+  return results;
+}
+
+// ── Selective Crawl Endpoints ─────────────────────────────────────────────────
+
+app.post('/api/crawl/keyword', async (req, res) => {
+  const { term, market, per_page = 20 } = req.body;
+  if (!term || !market) return res.status(400).json({ error: 'term and market required' });
+  res.json({ ok: true, message: `Deep research started for "${term}" in ${market}` });
+  deepResearchKeyword(term, market, Math.min(per_page, 50)).catch(console.error);
+});
+
+app.post('/api/crawl/playlist', async (req, res) => {
+  const { spotify_id } = req.body;
+  if (!spotify_id) return res.status(400).json({ error: 'spotify_id required' });
+  try {
+    const result = await deepResearchPlaylist(spotify_id);
+    res.json({ ok: true, ...result });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/crawl/genre', async (req, res) => {
+  const { genre, market, per_page = 20 } = req.body;
+  if (!genre || !market) return res.status(400).json({ error: 'genre and market required' });
+  res.json({ ok: true, message: `Deep research started for genre "${genre}" in ${market}` });
+  deepResearchGenre(genre, market, Math.min(per_page, 50)).catch(console.error);
+});
+
+// Get crawl status
+app.get('/api/crawl/status', (req, res) => {
+  res.json(syncState);
+});
+
+// Trigger full crawl (manual — always runs regardless of 24h check)
 app.post('/api/crawl/now', (req, res) => {
   res.json({ ok: true });
   runCrawl().catch(console.error);
